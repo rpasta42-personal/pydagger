@@ -57,7 +57,7 @@ class Window(object):
       eb.add(two)
       win.add(eb)
       eb.show()
-      
+
       self.webView = webView = WebKit.WebView()
       #kkkk webView.set_size_request(width, height)
       win.set_default_size(width, height)
@@ -75,11 +75,11 @@ class Window(object):
       if self.visible:
          self.show()
 
-   def _on_resize_hack(self, json_data): pass 
+   def _on_resize_hack(self, json_data): pass
    def _on_resize_hack_2(self, json_data):
       cmd = json_data['cmd']
       args = json_data['args']
-   
+
       if cmd == 'resize':
          new_height = args['height']
          new_width = args['width']
