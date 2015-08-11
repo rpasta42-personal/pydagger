@@ -1,7 +1,6 @@
 from gi.repository import WebKit, Gtk, GObject
-from icloak_lib.events import Event
-from icloak_lib import misc
-import json, os
+from events import Event
+import misc, json, os
 
 class TrayMenu(object):
    def __init__(self, icon_path, menu_items):
@@ -36,7 +35,7 @@ class TrayMenu(object):
 class Window(object):
    '''Stuff for setting up Gtk + webkit + python'''
 
-   def __init__(self, width, height, title, _visible=True):
+   def __init__(self, width, height, title, _visible=True, debug = False):
       super(Window, self).__init__()
 
       self.visible = _visible
@@ -45,15 +44,43 @@ class Window(object):
       self.width = width
       self.height = height
       self.win = win = Gtk.Window()
-      self.webView = webView = WebKit.WebView()
-      #kkkk webView.set_size_request(width, height)
-      self.webView.props.settings.props.enable_default_context_menu = False
-      self.webView.connect('notify::title', self._on_webview_msg)
+
+      self.wk = wk = WebKit.WebView()
+      self.wkSettings = wkSettings = self.wk.get_settings()
+
+      self.wk.connect('notify::title', self._on_webview_msg)
 
       self.title = title
       win.set_title(title)
       win.set_default_size(width, height)
-      win.add(webView)
+
+      self.box = Gtk.VBox()
+      self.box.pack_start(wk, True, True, 0)
+
+      #look through Felipe's webkit code on launcher.
+      #wk.set_property('enable-file-access-from-file-uris', True)
+      #wk.set_property('enable-accelerated-compositing', True)
+      #wk.set_property('enable-xss-auditor', False)
+
+      props = wk.props.settings.props
+      props.enable_default_context_menu = False
+      if debug:
+         props.enable_default_context_menu = True
+         def open_inspector(inspector, target_view):
+            inspector_view = WebKit.WebView()
+            self.box.pack_start(inspector_view, True, True, 0)
+            return inspector_view
+         wkSettings.set_property('enable-developer-extras', True)
+         inspector = wk.get_inspector()
+         inspector.connect('inspect-web-view', open_inspector)
+
+
+      scrolled_win = Gtk.ScrolledWindow()
+      #scrolled_win.set_policy(
+      scrolled_win.add_with_viewport(self.box)
+
+      win.add(scrolled_win)
+      #win.add(self.box)
 
       self.on_delete = lambda *x: False
       self.win.connect('delete-event', self._on_delete)
@@ -67,10 +94,10 @@ class Window(object):
 
    def load(self, path):
       path = os.path.realpath(path)
-      self.webView.open(path)
+      self.wk.open(path)
 
    def exec_js(self, code):
-      self.webView.execute_script(code)
+      self.wk.execute_script(code)
 
    def show(self):
       self.win.set_title(self.title)
@@ -80,6 +107,8 @@ class Window(object):
       #self.win.hide_all()
       self.win.hide()
 
+   def maximize(self):
+      self.win.maximize()
 
    def toggle_show(self):
       if self.visible:
@@ -111,5 +140,5 @@ class Window(object):
          GObject.timeout_add(how_often, main_loop_updater)
 
       main_loop_callback()
-      #Gtk.main()
+      Gtk.main()
 

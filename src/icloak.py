@@ -1,29 +1,16 @@
 from os.path import abspath, dirname, realpath
-import misc
-import configparser
+import misc #, ConfigParser
 
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
 
-class Application(object):
+class Application():
    #_main_file = __file__
-   def __init__(self, debug, app_name, _main_app_file):
-      super().__init__()
-      app_path = abspath(dirname(realpath(_main_app_file)) + '/../')
-      in_icloak = misc.file_exists('/etc/icloak')
-      if in_icloak:
-         debug = False
+   def __init__(self, debug, app_name, main_app_file=None):
+      if main_app_file is not None:
+         self.app_path = abspath(dirname(realpath(main_app_file)) + '/../') + '/'
 
-      if in_icloak:
-         conf_path = '/etc/icloak-%s.conf' % app_name
-      else:
-         conf_path = '%s/data/%ssrc' % (app_path, app_name)
-
-      if misc.file_exists(conf_path):
-         conf = misc.read_conf(conf_path)
-      else:
-         conf =
-      self.in_icloak = in_icloak
-      self._main_app_file = _main_app_file
+      self.main_app_file = main_app_file
+      self.in_icloak = misc.file_exists('/etc/icloak')
       self.debug = debug
 
