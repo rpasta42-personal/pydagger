@@ -89,7 +89,7 @@ class Window(object):
          self.show()
 
    def _on_delete(self, *args):
-      #print 'we got called'
+      #print('we got called')
       return self.on_delete()
 
    def load(self, path):
@@ -116,6 +116,7 @@ class Window(object):
       else:
          self.show()
       self.visible = not self.visible
+
    def _on_webview_msg(self, v, param):
       raw_data = v.get_title()
       if not raw_data:
@@ -130,6 +131,7 @@ class Window(object):
 
       if self.on_gui_event is not None:
          self.on_gui_event(data)
+
    #Optional. Can also use custom loop
    def run(self, main_loop_callback=None, how_often=1000):
       if main_loop_callback == None:
