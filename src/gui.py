@@ -2,35 +2,6 @@ from gi.repository import WebKit, Gtk, GObject
 from events import Event
 import misc, json, os
 
-class TrayMenu(object):
-   def __init__(self, icon_path, menu_items):
-      super(TrayMenu, self).__init__()
-
-      self._menu_items = menu_items
-      self._icon = Gtk.StatusIcon() #Gtk.status_icon_new_from_file(icon_path)
-      self._icon.set_from_file(icon_path)
-
-      #self._icon.connect('activate', lambda *args: self._make_menu())
-      #self._icon.connect('popup-menu', lambda *args: self._make_menu())
-      self._icon.connect('button-press-event', lambda widget, event: self._make_menu(widget, event))
-
-
-   #event_button=2
-   def _make_menu(self, widget, event):
-      event_button = event.button
-      event_time = event.time
-
-      self.menu = Gtk.Menu()
-
-      for label, handler in self._menu_items:
-         item = Gtk.MenuItem(label)
-         #handler = self._menu_items[label]
-         self.menu.append(item)
-         item.connect('activate', handler)
-
-      self.menu.popup(None, None, None, None, event_button, event_time)
-      self.menu.show_all()
-
 #TODO: make all window inherit from this class (instead of having it as member element)
 class Window(object):
    '''Stuff for setting up Gtk + webkit + python'''
@@ -143,4 +114,35 @@ class Window(object):
 
       main_loop_callback()
       Gtk.main()
+
+
+class TrayMenu(object):
+   def __init__(self, icon_path, menu_items):
+      super(TrayMenu, self).__init__()
+
+      self._menu_items = menu_items
+      self._icon = Gtk.StatusIcon() #Gtk.status_icon_new_from_file(icon_path)
+      self._icon.set_from_file(icon_path)
+
+      #self._icon.connect('activate', lambda *args: self._make_menu())
+      #self._icon.connect('popup-menu', lambda *args: self._make_menu())
+      self._icon.connect('button-press-event', lambda widget, event: self._make_menu(widget, event))
+
+
+   #event_button=2
+   def _make_menu(self, widget, event):
+      event_button = event.button
+      event_time = event.time
+
+      self.menu = Gtk.Menu()
+
+      for label, handler in self._menu_items:
+         item = Gtk.MenuItem(label)
+         #handler = self._menu_items[label]
+         self.menu.append(item)
+         item.connect('activate', handler)
+
+      self.menu.popup(None, None, None, None, event_button, event_time)
+      self.menu.show_all()
+
 
