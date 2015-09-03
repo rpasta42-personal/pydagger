@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
    demo_run = True
    queue = threadutils.MessageQueue()
-   monitor = FSMonitor("/tmp", queue)
+   monitor = FSMonitor(sys.argv[1], queue)
    monitor.start()
 
    def signal_handler(signal, frame):
@@ -150,11 +150,6 @@ if __name__ == "__main__":
 
    signal.signal(signal.SIGINT, signal_handler)
    signal.signal(signal.SIGTERM, signal_handler)
-   if not os.path.exists("/tmp/tester"):
-      os.mkdir("/tmp/tester")
-
-   if os.path.exists("/tmp/new_folder"):
-      os.rmdir("/tmp/new_folder")
 
    def on_file_created(path, name, mtime):
       print("FILE CREATED: %s %s %s" % (path,name,mtime))
@@ -185,34 +180,7 @@ if __name__ == "__main__":
       counter=0
       while demo_run:
          time.sleep(.5)
-         if not os.path.exists("/tmp/tester"):
-            os.mkdir("/tmp/tester")
-
-         with open("/tmp/tester/testfile", "w") as f:
-            f.write("Just stuff")
-
-
-         if counter == 10:
-            print("TEST DELETING FILE")
-            os.unlink("/tmp/tester/testfile")
-
-         if counter == 20:
-            print("TEST DELETEING FILE & DIRECTORY")
-            shutil.rmtree("/tmp/tester")
-
-         if counter == 30:
-            try:
-               os.mkdir("/tmp/new_folder")
-            except:
-               pass
-            print("TEST NEW DIR")
-
-         if counter == 40:
-            shutil.rmtree("/tmp/new_folder")
-            print("EXIT!")
-            break
          queue.process()
-         counter+=1
    finally:
       print("Stoping monitor")
       monitor.stop()
