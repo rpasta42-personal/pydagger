@@ -1,6 +1,7 @@
 from gi.repository import WebKit, Gtk, GObject
-from events import Event
-import misc, json, os
+from pycloak.events import Event
+from pycloak import misc
+import json, os
 
 #TODO: make all window inherit from this class (instead of having it as member element)
 class Window(object):

@@ -1,5 +1,5 @@
 from os.path import abspath, dirname, realpath
-import misc #, ConfigParser
+from pycloak import misc #, ConfigParser
 
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
