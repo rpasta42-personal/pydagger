@@ -26,9 +26,10 @@ class FSMonitor(object):
          raise Exception("Monitor already startted!")
 
    def stop(self):
-      self.worker.lqueue.invoke(self.worker.stop_monitor)
-      self.worker.join()
-      self.worker = None
+      if self.worker:
+         self.worker.lqueue.invoke(self.worker.stop_monitor)
+         self.worker.join()
+         self.worker = None
    
 class FSMonitorWorker(threading.Thread):
 
@@ -56,58 +57,85 @@ class FSMonitorWorker(threading.Thread):
       self.monitor = False
 
    def check_fs(self, path, with_events=True):
+      # we are tracking files encountered on this run. As they are found, they are removed from the list
+      # below, any files left would then signify that they were deleted and not part of the FS anylonger.
       existing_paths = self.filestates.keys()
 
+      # Walk the provided path and make a map of every file encountered
       for root, dirs, files in os.walk(path, topdown=False):
-         for name in files:
-            full_path = os.path.join(root, name)
-            mtime = os.path.getmtime(full_path)
-            file_state = self.filestates.get(full_path, None)
-            try:
-               existing_paths.remove(full_path)
-            except ValueError:
-               pass
-            if file_state is None:
-               file_state = {'mtime': mtime, 'root': root, 'name':name, 'is_dir': False} 
-               self.filestates[full_path] = file_state
-               if with_events:
-                  self.mqueue.invoke(self.parent.on_file_created, path=root, name=name, mtime=mtime)
-
-            if file_state['mtime'] != mtime:
-               file_state['mtime'] = mtime
-               if with_events:
-                  self.mqueue.invoke(self.parent.on_file_changed, path=root, name=name, mtime=mtime)
-
          for name in dirs:
             full_path = os.path.join(root, name)
-            mtime = os.path.getmtime(full_path)
             dir_state = self.filestates.get(full_path, None)
             try:
+               # in a try block in case file dissapears in the middle of scanning it
+               mtime = os.path.getmtime(full_path)
+            except:
+               continue
+
+            try:
+               # lazy way of removing a path from the list without havin to find it first.
                existing_paths.remove(full_path)
             except ValueError:
                pass
+
             if dir_state is None:
                dir_state = {'mtime': mtime, 'root': root, 'name': name, 'is_dir': True}
                self.filestates[full_path] = dir_state
                if with_events:
                   self.mqueue.invoke(self.parent.on_dir_created, path=root, name=name, mtime=mtime)
-
-            if dir_state['mtime'] != mtime:
+            elif dir_state['mtime'] != mtime:
                dir_state['mtime'] = mtime
                if with_events:
                   self.mqueue.invoke(self.parent.on_dir_changed, path=root, name=name, mtime=mtime)
-      if with_events:
-         for path in existing_paths:
-            path_state = self.filestates.get(full_path)
+
+         for name in files:
+            full_path = os.path.join(root, name)
+            file_state = self.filestates.get(full_path, None)
+            try:
+               mtime = os.path.getmtime(full_path)
+            except:
+               continue
+
+            try:
+               existing_paths.remove(full_path)
+            except ValueError:
+               pass
+
+            if file_state is None:
+               file_state = {'mtime': mtime, 'root': root, 'name':name, 'is_dir': False} 
+               self.filestates[full_path] = file_state
+               if with_events:
+                  self.mqueue.invoke(self.parent.on_file_created, path=root, name=name, mtime=mtime)
+            elif file_state['mtime'] != mtime:
+               file_state['mtime'] = mtime
+               if with_events:
+                  self.mqueue.invoke(self.parent.on_file_changed, path=root, name=name, mtime=mtime)
+
+
+      for path in existing_paths:
+         path_state = self.filestates.get(path, None)
+         if path_state:
             if path_state["is_dir"]:
-               self.mqueue.invoke(self.parent.on_dir_deleted, path, path=path_state['root'], name=path_state['name'], mtime=time.time())
+               if with_events:
+                  self.mqueue.invoke(
+                        self.parent.on_dir_deleted, 
+                        path=path_state['root'], 
+                        name=path_state['name'], 
+                        mtime=time.time())
             else:
-               self.mqueue.invoke(self.parent.on_file_deleted, path, path=path_state['root'], name=path_state['name'], mtime=time.time())
+               if with_events:
+                  self.mqueue.invoke(
+                        self.parent.on_file_deleted, 
+                        path=path_state['root'], 
+                        name=path_state['name'], 
+                        mtime=time.time())
+            self.filestates.pop(path, None)
             
 if __name__ == "__main__":
 
    import signal
    import sys
+   import shutil
 
    demo_run = True
    queue = threadutils.MessageQueue()
@@ -125,6 +153,9 @@ if __name__ == "__main__":
    if not os.path.exists("/tmp/tester"):
       os.mkdir("/tmp/tester")
 
+   if os.path.exists("/tmp/new_folder"):
+      os.rmdir("/tmp/new_folder")
+
    def on_file_created(path, name, mtime):
       print("FILE CREATED: %s %s %s" % (path,name,mtime))
 
@@ -132,25 +163,58 @@ if __name__ == "__main__":
       print("FILE CHANGED: %s %s %s" % (path,name,mtime))
 
    def on_file_deleted(path, name, mtime):
-      print("FILE CHANGED: %s %s %s" % (path,name,mtime))
+      print("FILE DELETED: %s %s %s" % (path,name,mtime))
 
    def on_dir_created(path, name, mtime):
       print("DIR CREATED: %s %s %s" % (path, name, mtime))
 
    def on_dir_changed(path, name, mtime):
       print("DIR CHANGED: %s %s %s" % (path, name, mtime))
+
+   def on_dir_deleted(path, name, mtime):
+      print("DIR DELETED: %s %s %s" % (path, name, mtime))
    
    monitor.on_file_changed += on_file_changed
    monitor.on_file_created += on_file_created
    monitor.on_file_deleted += on_file_deleted
-   monitor.on_dir_changed += on_file_changed
-   monitor.on_dir_created += on_file_created
-   monitor.on_dir_deleted += on_file_deleted
+   monitor.on_dir_changed += on_dir_changed
+   monitor.on_dir_created += on_dir_created
+   monitor.on_dir_deleted += on_dir_deleted
 
-   while demo_run:
-      time.sleep(.5)
-      with open("/tmp/tester/testfile", "w") as f:
-         f.write("Just stuff")
+   try:
+      counter=0
+      while demo_run:
+         time.sleep(.5)
+         if not os.path.exists("/tmp/tester"):
+            os.mkdir("/tmp/tester")
 
-      queue.process()
+         with open("/tmp/tester/testfile", "w") as f:
+            f.write("Just stuff")
+
+
+         if counter == 10:
+            print("TEST DELETING FILE")
+            os.unlink("/tmp/tester/testfile")
+
+         if counter == 20:
+            print("TEST DELETEING FILE & DIRECTORY")
+            shutil.rmtree("/tmp/tester")
+
+         if counter == 30:
+            try:
+               os.mkdir("/tmp/new_folder")
+            except:
+               pass
+            print("TEST NEW DIR")
+
+         if counter == 40:
+            shutil.rmtree("/tmp/new_folder")
+            print("EXIT!")
+            break
+         queue.process()
+         counter+=1
+   finally:
+      print("Stoping monitor")
+      monitor.stop()
+
 
