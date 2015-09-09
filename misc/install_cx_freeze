@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+   echo "USAGE: $0 <virt name>"
+   echo
+   echo "ERROR: No virtual environment name provided!"
+   exit 1
+fi
+
+VIRTNAME=$1
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+echo " --- Installing CX-FREEZE 4.3.4"
+python -V
+
+mkdir /tmp/cx_freeze
+cd /tmp/cx_freeze
+wget https://pypi.python.org/packages/source/c/cx_Freeze/cx_Freeze-4.3.4.tar.gz
+tar -zxvf cx_Freeze-4.3.4.tar.gz
+cd cx_Freeze-4.3.4
+# fix odd issue with python not reporting Py_ENABLE_SHARED correctly
+sed -i 's/if not vars\.get("Py_ENABLE_SHARED", 0)/if True/g' setup.py
+rm ../cx_Freeze-4.3.4.tar.gz
+tar -zcvf ../cx_Freeze-4.3.4.tar.gz ./
+if [ "$VIRTNAME" != "--no-virt" ]; then
+   echo " --- SWITCHING VIRTNAME $VIRTNAME"
+   source `which virtualenvwrapper.sh`
+   workon $VIRTNAME
+fi
+cd ..
+pip install ./cx_Freeze-4.3.4.tar.gz
+if [ "$VIRTNAME" != "--no-virt" ]; then
+   echo " --- DEACTIVATING VIRTNAME $VIRTNAME"
+   deactivate
+fi
+
+cd $DIR
+rm -Rf /tmp/cx_freeze
+

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+   echo "USAGE: $0 <virt name>"
+   echo
+   echo "ERROR: No virtual environment name provided!"
+   exit 1
+fi
+
+VIRTNAME=$1
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+# install other packages
+if [ "$VIRTNAME" != "--no-virt" ]; then
+   source `which virtualenvwrapper.sh`
+   workon $VIRTNAME
+fi
+# remove cx_freeze from requirements file as we want to install it from source
+sed "s/cx-Freeze==.*//g" $DIR/python_requirements.txt > /tmp/requirements.txt
+pip install -r /tmp/requirements.txt
+# install cx_freeze
+$DIR/install_cx_freeze --no-virt
+if [ "$VIRTNAME" != "--no-virt" ]; then
+   deactivate
+fi
+
+
