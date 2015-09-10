@@ -6,7 +6,7 @@ setup (
    author="Kostyantyn Kovalskyy",
    author_email="konstantin@icloak.org",
    #packages=["pycloak", "pycloak.test"],
-   packages=["pycloak"],
+   packages=["pycloak", "pycloak.IPC"],
    #binary files go here
    #scripts=['bin/ifs-mount', 'bin/ifs-test'],
    #url='http://pypi.python.org/pypi/ICLOAKFS/',
