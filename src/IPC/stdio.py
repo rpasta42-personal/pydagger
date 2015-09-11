@@ -1,13 +1,15 @@
 import sys
 import time
+import json
 from jsonrpc import JSONRPCResponseManager, dispatcher
 
 class StdioCom(object):
 
-   def __init__(self, namespace):
+   def __init__(self, namespace, protocol = "JSONRPC"):
       self.namespace = namespace
       self.run = False
       self._jsonrpc = JSONRPCResponseManager()
+      self.protocol = protocol
       # list of callable members
       methods = [ method for method in dir(self) if callable(getattr(self, method)) ]
       for method in methods:
@@ -26,25 +28,23 @@ class StdioCom(object):
                
    def _on_idle(self):
       """Handles internal communication parsing"""
-      line = None
+      data = None
       try:
          line = sys.stdin.readline()
-         line = line.strip()
+         if line:
+            data = line.strip()
       except:
          pass
 
-      if line:
-         parts = line.split(" ", 1)
-         if len(parts) > 0:
-            protocol = parts[0]
-         if len(parts) > 1:
-            data = parts[1]
-
-         if protocol == "JSONRPC":
+      if data:
+         if self.protocol == "JSONRPC":
             response = self._jsonrpc.handle(data, dispatcher)
-            print(response.json)
-         elif protocol == 'exit':
-            self.run = False
+            if response:
+               sys.stdout.write("%s\n" % response.json)
+               sys.stdout.flush()
+            else:
+               sys.stdout.write(json.dumps({"error": {"message":"Could not generate response from provided input", "input":data}, "id": None, "jsonrpc": "2.0"}))
+               sys.stdout.flush()
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
