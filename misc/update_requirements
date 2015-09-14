@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+   echo "USAGE: $0 <virt name>|--no-virt"
+   echo
+   echo "ERROR: No virtual environment name provided!"
+   exit 1
+fi
+
+VIRTNAME=$1
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+if [ "$VIRTNAME" != "--no-virt" ]; then
+   source `which virtualenvwrapper.sh`
+   workon $VIRTNAME
+fi
+pip freeze > $DIR/python_requirements.txt
+echo " --- Requirements updated:"
+cat $DIR/python_requirements.txt
+if [ "$VIRTNAME" != "--no-virt" ]; then
+   deactivate
+fi

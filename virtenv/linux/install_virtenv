@@ -1,0 +1,12 @@
+#!/bin/bash
+
+virtenv=$(pip freeze | grep -q virtualenvwrapper)
+if [ $virtenv ]; then
+	sudo pip install virtualenvwrapper
+	export $WORKON_HOME=~/Env
+	source /usr/local/bin/virtualenvwrapper.sh
+else
+	source /usr/local/bin/virtualenvwrapper.sh
+	echo "VirtualEnvWrapper Installed..."
+fi
+

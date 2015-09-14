@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# This script upgrades all outdated packages in PIP. Use with care!
+
+pip list --outdated | cut -d ' ' -f1 | xargs -n1 pip install -U

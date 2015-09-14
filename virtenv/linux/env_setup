@@ -1,0 +1,26 @@
+#!/bin/bash
+
+function usage {
+	me=$(basename $0)
+	echo "USAGE: ${me} <PROJECT NAME> <PYTHON VER>"
+	echo
+	echo "<PROJECT NAME>	The project name to create a virtual env. No spaces allowed"
+	echo "<PYTHON VER>	The python version required for this env. Use only digits (ex: 2 or 3)"
+	echo
+}
+
+if [[ $# < 2 ]]; then
+	usage
+	exit 1
+fi
+
+PROJECT=$1
+VER=$2
+PYTHON_PATH=$(which python${VER})
+VIRT_NAME=${PROJECT}-p${VER}
+source ./install_virtenv
+
+echo "[${VIRT_NAME}] SETTING UP VIRTUAL ENVIRONMENT FOR PYTHON${VER} @ ${PYTHON_PATH}"
+mkvirtualenv -p $PYTHON_PATH ${PROJECT}-p${VER}
+echo "READY!"
+
