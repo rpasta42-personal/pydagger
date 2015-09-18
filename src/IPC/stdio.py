@@ -83,7 +83,12 @@ class StdioCom(object):
          self._on_idle()
          time.sleep(0.1)
 
+   def stop(self):
+      """Stops stdio loop"""
+      self.run = False
+
    def call(self, method, args):
+      """Performs rpc methods"""
       evt =dict(on_result=Event(), on_error=Event())
       try:
          package = dict(jsonrpc="2.0", method=method, params=args, id=self._send_id)
