@@ -1,0 +1,24 @@
+#!/bin/bash
+
+SRC=$(realpath ./src)
+while RES=($(inotifywait -r -q -e modify,attrib,move,close_write,create,delete,delete_self $SRC)); do
+    DIR=${RES[0]}
+    EVENT=${RES[1]}
+    FILE=${RES[2]}
+    FILEPATH=${DIR}${FILE}
+    COMPILE=1
+    if [ -f "$FILEPATH" ] && [[ $FILE =~ .py$ ]]; then
+        echo "[$EVENT] $FILEPATH"
+        echo "  - TESTING SYNTAX"
+        SYNTAX=$(python -m py_compile $FILEPATH 2>&1)
+        COMPILE=$?
+        [[ $COMPILE == 0 ]] && echo "  - NO SYNTAX ERRORS" || echo $SYNTAX
+    fi
+
+    if [[ $COMPILE == 0 ]]; then
+        echo "  - MAKE && MAKE INSTALL"
+        COMP=$(make 2>&1 && make install 2>&1)
+        [[ $? == 0 ]] && echo "  - GREAT SUCCESS!" || echo $COMP
+        echo " -------------------------------------"
+    fi
+done

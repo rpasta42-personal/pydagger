@@ -1,0 +1,16 @@
+sudo pip install virtualenvwrapper
+
+#echo source /usr/share/virtualenvwrapper/virtualenvwrapper.sh >> ~/.zshrc
+#echo source `which virtualenvwrapper.sh` >>~/.zshrc
+
+mkvirtenv name --python=`which python3`
+
+workon          = list of virtual environment
+workon <label>  = work on specific environment
+deactivate      = turns off virtual environment
+
+python freeze >freeze.txt
+    =list all packages in this environment
+
+
+pip install -r freeze.txt

@@ -2,7 +2,7 @@ from gi.repository import Gtk
 import notify2 as pynotify
 import subprocess, os, signal, pexpect, json
 from multiprocessing import Process
-
+import os.path
 #same as raise but can be used as function
 def throw(err): raise err
 def is_error(x): return isinstance(x, Error)
@@ -11,23 +11,20 @@ def is_error(x): return isinstance(x, Error)
 _handle_error = lambda *args: throw('need to initialize misc first')
 _debug = False
 
-def init(prog_name, handle_error, debug):
+def init(prog_name, handle_error = None, debug = None):
    pynotify.init(prog_name)
-
-   global _handle_error
-   _handle_error = handle_error
 
    global _debug
    _debug = debug
    #gobject.threads_init()
 
 ###small misc toools###
-#a == b or a == c or a == d
-def or_cmp(var, *lst_val):
-   for x in lst_val:
-      if x == var:
-         return True
-   return False
+
+#say you have app/src/main.py. To get path of project directory (app) from main.py
+#you can use get_relative_path(__file__, '..')
+def get_abs_path_relative_to(current_file, relative_path = ''):
+   return os.path.abspath(os.path.dirname(os.path.realpath(current_file)) + relative_path)
+
 
 def logical_xor(str1, str2):
     return bool(str1) ^ bool(str2)
@@ -38,11 +35,14 @@ def nothing_proc(*args):
 def run_periodically(seconds, func):
    gobject.timeout_add(seconds*1000, func)
 
+
 def file_exists(filePath):
    return filePath and os.path.exists(filePath)
+
 def write_file(filePath, data):
    with open(filePath, 'w') as f:
       return f.write(data)
+
 def read_file(filePath, nBytes=None, createIfNeeded=False):
    if file_exists(filePath):
       with open(filePath, 'r') as f:
@@ -57,9 +57,10 @@ def read_file(filePath, nBytes=None, createIfNeeded=False):
 
 def write_conf(path, jsonConf):
    write_file(path, json.dumps(jsonConf) + '\n')
+
 def read_conf(path):
    if path:
-      data = read_file(path, createIfNeeded=True)
+      data = read_file(path)
       #data = data.encode('ascii', 'replace')
       if data:
          return json.loads(data)
@@ -88,11 +89,13 @@ def notify(title, msg='', pic='onion', timeout=pynotify.EXPIRES_DEFAULT):
       raise Exception('could not send notification')
 
    return n
+
 def update_notification(n, title, msg, pic, timeout=None):
    n.update(title, msg, pic)
    if timeout:
       n.set_timeout(timeout)
       pass
+
 def alert(data=None):
    msg = Gtk.MessageDialog(None, Gtk.DIALOG_MODAL, Gtk.MESSAGE_INFO, Gtk.BUTTONS_OK, data)
    msg.run()
@@ -118,6 +121,7 @@ def gnu_ps_e():
       #print(data)
       processes.append(data)
    return processes
+
 #name or pid
 def get_proc(search_by, critaria, processes=None):
    if not processes:
@@ -135,6 +139,7 @@ def get_proc(search_by, critaria, processes=None):
          if proc_line['pid'] == critaria:
             return proc_line
    return None
+
 def kill_proc(proc, sig=signal.SIGINT):
    if not proc:
       return #raise Exception('trying to kill non-existing process')
@@ -157,6 +162,7 @@ def exec_prog(command):
       args = command.split()
    p = Process(target=lambda:subprocess.call(args))
    p.start()
+
 #TODO: use arrays instead of map/dict?
 def exec_prog_with_env(command, envBindings):
    args = command.split()
@@ -169,6 +175,7 @@ def exec_prog_with_env(command, envBindings):
       subprocess.Popen(args, env=my_env, shell=True)
 
    Process(target=subProc).start()
+
 #blocking, returns output
 def exec_get_stdout(command):
    args = command.split()
