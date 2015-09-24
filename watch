@@ -16,8 +16,8 @@ while RES=($(inotifywait -r -q -e modify,attrib,move,close_write,create,delete,d
     fi
 
     if [[ $COMPILE == 0 ]]; then
-        echo "  - MAKE && MAKE INSTALL"
-        COMP=$(make 2>&1 && make install 2>&1)
+        echo "  - MAKE && && make test && MAKE install"
+        COMP=$(make 2>&1 && make test 2>&1 && sudo make install 2>&1)
         [[ $? == 0 ]] && echo "  - GREAT SUCCESS!" || echo $COMP
         echo " -------------------------------------"
     fi
