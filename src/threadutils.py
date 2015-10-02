@@ -83,24 +83,27 @@ class MessageQueue(object):
 
 
 class ThreadQueue():
-   def __init__(self):
+   #def __init__(...., busy_sleep = 0.05)??
+   def __init__(self, num_workers=1):
       self.q = Queue()
       self.lock = threading.Lock()
-      t = threading.Thread(target=self._worker)
-      #?? t.daemon = False
-      t.daemon = True
-      t.start()
+      #self.busy_sleep = busy_sleep
+
+      for i in range(0, num_workers):
+         t = threading.Thread(target=self._worker)
+         t.daemon = True
+         t.start()
 
    def join(self):
       self.q.join()
 
    def _worker(self):
       while True:
-         time.sleep(0.05)
          item = self.q.get(block=True)
          f, callback, args, kwargs = item
          callback(f(*args, **kwargs))
          self.q.task_done()
+         #time.sleep(self.busy_sleep)
 
    def add_task_callback(self, f, callback, *args, **kwargs):
       self.q.put([f, callback, args, kwargs])
@@ -110,24 +113,26 @@ class ThreadQueue():
          pass
       self.add_task_callback(f, fake_callback, *args, **kwargs)
 
+
 if __name__ == "__main__":
-   threadQueue = ThreadQueue()
+   def test_workers():
+      threadQueue = ThreadQueue(10)
 
-   def f(n):
-      with threadQueue.lock:
-         print('thread msg: %i\n' % n)
-      time.sleep(1)
-      return 0
-   def callback(x):
-      print('task returned %i' % x)
+      def work(n):
+         time.sleep(0.5)
+         with threadQueue.lock:
+            print('thread msg: %i\n' % n)
+         return 0
 
-   threadQueue.add_task_callback(f, callback, 4)
-   threadQueue.add_task_callback(f, callback, 5)
+      def callback(x):
+         print('task returned %i' % x)
 
-   #threadQueue.add_task(f, callback, 4)
+      for i in range(0, 15):
+         threadQueue.add_task_callback(work, callback, i)
+      threadQueue.join()
+      print('main thread')
 
-   print('main thread')
-   threadQueue.join()
+   test_workers()
 
 #testing my stuff so temporarily disable Felipe's test
 if 1 == 0:
