@@ -1,5 +1,8 @@
 import os, time, threading
-from queue import Queue
+try:
+   from queue import Queue
+except:
+   from Queue import Queue
 
 class MsgInvoke(object):
    """A method or function invocation message. Takes a callback and arguments which is later used
@@ -113,15 +116,17 @@ if __name__ == "__main__":
    def f(n):
       with threadQueue.lock:
          print('thread msg: %i\n' % n)
+      time.sleep(1)
       return 0
    def callback(x):
       print('task returned %i' % x)
 
    threadQueue.add_task_callback(f, callback, 4)
+   threadQueue.add_task_callback(f, callback, 5)
+
    #threadQueue.add_task(f, callback, 4)
 
    print('main thread')
-   time.sleep(1)
    threadQueue.join()
 
 #testing my stuff so temporarily disable Felipe's test
