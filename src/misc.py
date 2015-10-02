@@ -182,4 +182,3 @@ def exec_get_stdout(command):
    task = subprocess.Popen(args, stdout=subprocess.PIPE)
    return task.communicate()
 
-
