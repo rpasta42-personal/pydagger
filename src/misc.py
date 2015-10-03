@@ -3,6 +3,7 @@ import notify2 as pynotify
 import subprocess, os, signal, pexpect, json
 from multiprocessing import Process
 import os.path
+
 #same as raise but can be used as function
 def throw(err): raise err
 def is_error(x): return isinstance(x, Error)
@@ -25,7 +26,6 @@ def init(prog_name, handle_error = None, debug = None):
 def get_abs_path_relative_to(current_file, relative_path = ''):
    return os.path.abspath(os.path.dirname(os.path.realpath(current_file)) + relative_path)
 
-
 def logical_xor(str1, str2):
     return bool(str1) ^ bool(str2)
 
@@ -34,7 +34,6 @@ def nothing_proc(*args):
 
 def run_periodically(seconds, func):
    gobject.timeout_add(seconds*1000, func)
-
 
 def file_exists(filePath):
    return filePath and os.path.exists(filePath)
@@ -182,5 +181,4 @@ def exec_get_stdout(command):
 
    task = subprocess.Popen(args, stdout=subprocess.PIPE)
    return task.communicate()
-
 

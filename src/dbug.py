@@ -4,6 +4,19 @@ import sys
 import inspect
 from termcolor import colored, cprint
 
+halt_flags = dict()
+
+def halt_on(key, value, label, fn):
+	global halt_flags
+	if key not in halt_flags:
+		halt_flags[key] = list()
+
+	if fn(halt_flags[key], value):
+		print(label % (halt_flags[key], value))
+		sys.exit(1)
+
+	halt_flags[key].append(value)
+
 class ConsoleInfo(object):
 
 	def __init__(self):
