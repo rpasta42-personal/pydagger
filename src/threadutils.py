@@ -1,6 +1,6 @@
 import os
 import time
-import Queue
+from queue import Queue
 import threading
 
 class MsgInvoke(object):
@@ -39,8 +39,8 @@ class MessageQueue(object):
 
    def __init__(self):
       self.processing = False
-      self.__queue__ = Queue.Queue()
-      self.__delayed__queue = Queue.Queue()
+      self.__queue__ = Queue()
+      self.__delayed__queue = Queue()
       self.__lock__ = threading.Lock()
 
    def empty(self):

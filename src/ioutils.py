@@ -1,12 +1,12 @@
 import os
 import time
 import threading
-import threadutils
-from events import Event
+from pycloak import threadutils
+from pycloak.events import Event
 
 class FSMonitor(object):
 
-   def __init__(self, paths, msg_queue, delay=.1):
+   def __init__(self, paths, msg_queue = threadutils.MessageQueue(), delay=.1):
       self.delay = delay
       self.msg_queue = msg_queue
       self.paths = paths
@@ -30,6 +30,13 @@ class FSMonitor(object):
          self.worker.lqueue.invoke(self.worker.stop_monitor)
          self.worker.join()
          self.worker = None
+
+   def sync_check(self):
+      if self.worker is None:
+         self.worker = FSMonitorWorker(self, self.paths, self.msg_queue, self.delay)
+      else:
+         self.worker.check_paths()
+         self.msg_queue.process()
    
 class FSMonitorWorker(threading.Thread):
 
@@ -47,8 +54,7 @@ class FSMonitorWorker(threading.Thread):
       self.monitor = True
       self.check_fs(self.paths, False)  # initial file run to create map of changes
       while self.monitor:
-         for path in self.paths:
-            self.check_fs(self.paths)
+         self.check_paths()
 
          self.lqueue.process()
          time.sleep(self.delay)
@@ -56,10 +62,14 @@ class FSMonitorWorker(threading.Thread):
    def stop_monitor(self):
       self.monitor = False
 
+   def check_paths(self):
+      for path in self.paths:
+         self.check_fs(self.paths)
+
    def check_fs(self, path, with_events=True):
       # we are tracking files encountered on this run. As they are found, they are removed from the list
       # below, any files left would then signify that they were deleted and not part of the FS anylonger.
-      existing_paths = self.filestates.keys()
+      existing_paths = list(self.filestates.keys())
 
       # Walk the provided path and make a map of every file encountered
       for root, dirs, files in os.walk(path, topdown=False):
