@@ -3,6 +3,7 @@ import time
 import json
 import traceback
 import inspect
+import textwrap
 from pprint import pprint, pformat
 from jsonrpc import JSONRPCResponseManager, dispatcher
 from pycloak.events import Event
@@ -42,38 +43,89 @@ class StdioCom(object):
          if m and hasattr(m, "exposed"):
             dispatcher[method if not namespace else "%s.%s" % (namespace,method)] = m # add it to jsonrpc methods
 
+   def generate_doc(self, format):
+      return self._api_generator(format, "doc")
+
    def generate_api(self, lang):
-      
-      api = []
-      api.append("""var %s = function(rpc) {
-      this._rpc = rpc;
-}""" % self.namespace)
-      method_docs = dict()
+      return self._api_generator(lang, "api")
+
+   def _api_generator(self, lang, generator):
+      g_start = getattr(self, "_generate_%s_start" % generator)
+      g_method = getattr(self, "_generate_%s_method" % generator)
+      g_end = getattr(self, "_generate_%s_end" % generator)
+
       # list of callable members
       methods = [ method for method in dir(self) if callable(getattr(self, method)) ]
+      api_src = []
+      api_src.append(g_start(lang))
       for method in methods:
-         # get method intance
          m = getattr(self, method)
          # check if its exposed
          if m and hasattr(m, "exposed"):
-            doc = inspect.getdoc(m)
-            arg_spec = inspect.getargspec(m)
-            args = []
-            args_call = []
-            for arg in arg_spec.args:
-               if arg != "self":
-                  args.append(arg)
-                  args_call.append("'%s': %s" % (arg, arg))
+            args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
+            api_src.append(g_method(lang, method, args, inspect.getdoc(m)))
 
-            args = ", ".join(args)
-            body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
-            if doc:
-               doc = "/**\n%s\n */\n" % ("\n".join([" * %s" % line for line in doc.splitlines()]))
-            api.append("%s%s.prototype.%s = function(%s) { %s }" % (doc, self.namespace, method, args, body))
-         
-      return "\n\n".join(api)
+      api_src.append(g_end(lang))
+      return "\n\n".join(api_src)
 
-   def generate_doc(self, format):
+   def _generate_api_start(self, lang):
+      if lang in ["javascript", "nodejs"]:
+         return "var %s = function(rpc) { this._rpc = rpc; }" % self.namespace
+
+      return ""
+
+   def _generate_api_method(self, lang, method, args, doc):
+      if lang in ["javascript", "nodejs"]:
+         out = ""
+         args_call = []
+         for arg in args:
+            args_call.append("'%s': %s" % (arg, arg))
+         body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
+         if doc:
+            doc = "/**\n%s\n */\n" % ("\n".join([" * %s" % line for line in doc.splitlines()]))
+         return "%s%s.prototype.%s = function(%s) { %s }" % (doc, self.namespace, method, ", ".join(args), body)
+
+      return ""
+
+   def _generate_api_end(self, lang):
+      if lang == "javascript":
+         return ""
+      elif lang == "nodejs":
+         return "module.export = %s" % self.namespace
+
+      return ""
+
+   def _generate_doc_start(self, format):
+
+      if format == "html":
+         style="""
+html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
+.method { padding: 0 0 2em 2em; border-bottom: 1px solid #000; }
+.method .name { color: green; text-weight: bolder; }
+.method .arg { color: red; }
+.method .doc { padding-left: 4em; }
+"""
+         return '<!doctype html><html><head><title>%(namespace)s Documentation</title><style type="text/css">%(style)s</style></head><body><div class="namespace">%(namespace)s</div>' % dict(namespace=self.namespace, style=style)
+
+      return ""
+
+   def _generate_doc_method(self, format, method, args, doc):
+
+      if format == "text":
+         args_txt = ", ".join(args)
+         doc_txt = "\n".join(textwrap.wrap(doc, width=40, initial_indent=' ' * 4, subsequent_indent=' ' * 4))
+         #doc_txt = "%s\n" % doc_txt if len(doc_txt) > 0 else ""
+         return '%(method)s(%(args)s)\n%(doc)s' % dict(method=method, args=args_txt, doc=doc_txt)
+
+      if format == "html":
+         args_txt = ['<span class="arg">%s</span>' % arg for arg in args]
+         return '<div class="method"><span class="name">%(method)s</span>(<span class="args">%(args)s</span>)<div class="doc">%(doc)s</div></div>' % dict(method=method, args=", ".join(args_txt), doc=doc)
+      return ""
+
+   def _generate_doc_end(self, format):
+      if format == "html":
+         return """</body>
+</html>"""
       return ""
 
    def start(self):
