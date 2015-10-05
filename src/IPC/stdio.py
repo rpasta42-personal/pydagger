@@ -91,7 +91,7 @@ class StdioCom(object):
       if lang == "javascript":
          return ""
       elif lang == "nodejs":
-         return "module.export = %s" % self.namespace
+         return "module.exports = %s" % self.namespace
 
       return ""
 
