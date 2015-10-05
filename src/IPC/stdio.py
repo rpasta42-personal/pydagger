@@ -69,21 +69,51 @@ class StdioCom(object):
       return "\n\n".join(api_src)
 
    def _generate_api_start(self, lang):
-      if lang in ["javascript", "nodejs"]:
+      if lang in ["nodejs"]:
+         return """'use strict';
+module.exports = (function() {
+    var util = require('util');
+    var EventEmitter = require('events').EventEmitter;
+    var stdio = require("stdio");
+
+    var %(namespace)s = function(bin_path, args) {
+        this._transport = new stdio.stdioLib(bin_path, args);
+        this._rpc = new stdio.jsonrpc(this._transport, "%(namespace)s");
+        var base = this;
+        this._rpc.on("connected", function() {
+           base.emit("connected");
+        });
+        this._rpc.on("error", function(error) {
+            base.emit("error", error);
+        });
+    }
+
+    // Inherit event emitter functionality
+    util.inherits(onering, EventEmitter);
+    
+    // Start transport
+    onering.prototype.connect = function() {
+        this._transport.start()
+    }
+""" % dict(namespace=self.namespace)
+      elif lang in ["javascript"]:
          return "var %s = function(rpc) { this._rpc = rpc; }" % self.namespace
 
       return ""
 
    def _generate_api_method(self, lang, method, args, doc):
       if lang in ["javascript", "nodejs"]:
+         space = ""
+         if lang == "nodejs":
+            space = "    ";
          out = ""
          args_call = []
          for arg in args:
             args_call.append("'%s': %s" % (arg, arg))
          body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
          if doc:
-            doc = "/**\n%s\n */\n" % ("\n".join([" * %s" % line for line in doc.splitlines()]))
-         return "%s%s.prototype.%s = function(%s) { %s }" % (doc, self.namespace, method, ", ".join(args), body)
+            doc = "%s/**\n%s\n%s */\n" % (space, "\n".join(["%s * %s" % (space, line) for line in doc.splitlines()]), space)
+         return "%s%s%s.prototype.%s = function(%s) { %s }" % (doc, space, self.namespace, method, ", ".join(args), body)
 
       return ""
 
@@ -91,7 +121,8 @@ class StdioCom(object):
       if lang == "javascript":
          return ""
       elif lang == "nodejs":
-         return "module.exports = %s" % self.namespace
+         return """    return %(namespace)s;
+}());""" % dict(namespace=self.namespace)
 
       return ""
 
