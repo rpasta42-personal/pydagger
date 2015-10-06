@@ -9,7 +9,10 @@ class FSMonitor(object):
    def __init__(self, paths, msg_queue = threadutils.MessageQueue(), delay=.1):
       self.delay = delay
       self.msg_queue = msg_queue
-      self.paths = paths
+      if isinstance(paths, list):
+         self.paths = paths
+      else:
+         self.paths = [paths]
       self.worker = None
       self.on_file_created = Event()
       self.on_file_changed = Event()
@@ -34,6 +37,7 @@ class FSMonitor(object):
    def sync_check(self):
       if self.worker is None:
          self.worker = FSMonitorWorker(self, self.paths, self.msg_queue, self.delay)
+         self.worker.check_paths(False)
       else:
          self.worker.check_paths()
          self.msg_queue.process()
@@ -49,10 +53,13 @@ class FSMonitorWorker(threading.Thread):
       self.lqueue = threadutils.MessageQueue()
       self.monitor = False
       self.filestates = {}
+      for path in paths:
+         self.filestates[path] = {}
+
 
    def run(self):
       self.monitor = True
-      self.check_fs(self.paths, False)  # initial file run to create map of changes
+      self.check_paths(False)  # initial file run to create map of changes
       while self.monitor:
          self.check_paths()
 
@@ -62,50 +69,82 @@ class FSMonitorWorker(threading.Thread):
    def stop_monitor(self):
       self.monitor = False
 
-   def check_paths(self):
+   def check_paths(self, with_events=True):
       for path in self.paths:
-         self.check_fs(self.paths)
+         self.check_fs(os.path.abspath(path), with_events)
 
    def check_fs(self, path, with_events=True):
       # we are tracking files encountered on this run. As they are found, they are removed from the list
       # below, any files left would then signify that they were deleted and not part of the FS anylonger.
-      existing_paths = list(self.filestates.keys())
+      if self.filestates.get(path, None) == None:
+         self.filestates[path] = {}
 
-      # Walk the provided path and make a map of every file encountered
-      for root, dirs, files in os.walk(path, topdown=False):
-         for name in dirs:
-            full_path = os.path.join(root, name)
-            dir_state = self.filestates.get(full_path, None)
-            try:
-               # in a try block in case file dissapears in the middle of scanning it
-               mtime = os.path.getmtime(full_path)
-            except:
-               continue
+      existing_paths = list(self.filestates[path].keys())
 
-            try:
-               # lazy way of removing a path from the list without havin to find it first.
-               existing_paths.remove(full_path)
-            except ValueError:
-               pass
+      if os.path.isdir(path):
 
-            if dir_state is None:
-               dir_state = {'mtime': mtime, 'root': root, 'name': name, 'is_dir': True}
-               self.filestates[full_path] = dir_state
-               if with_events:
-                  self.mqueue.invoke(self.parent.on_dir_created, path=root, name=name, mtime=mtime)
-            elif dir_state['mtime'] != mtime:
-               dir_state['mtime'] = mtime
-               if with_events:
-                  self.mqueue.invoke(self.parent.on_dir_changed, path=root, name=name, mtime=mtime)
+         # Walk the provided path and make a map of every file encountered
+         for root, dirs, files in os.walk(path, topdown=False):
+            for name in dirs:
+               full_path = os.path.join(root, name)
+               dir_state = self.filestates[path].get(full_path, None)
+               try:
+                  # in a try block in case file dissapears in the middle of scanning it
+                  mtime = os.path.getmtime(full_path)
+               except:
+                  continue
 
-         for name in files:
-            full_path = os.path.join(root, name)
-            file_state = self.filestates.get(full_path, None)
-            try:
-               mtime = os.path.getmtime(full_path)
-            except:
-               continue
+               try:
+                  # lazy way of removing a path from the list without havin to find it first.
+                  existing_paths.remove(full_path)
+               except ValueError:
+                  pass
 
+               if dir_state is None:
+                  dir_state = {'mtime': mtime, 'root': root, 'name': name, 'is_dir': True}
+                  self.filestates[path][full_path] = dir_state
+                  if with_events:
+                     self.mqueue.invoke(self.parent.on_dir_created, path=root, name=name, mtime=mtime)
+               elif dir_state['mtime'] != mtime:
+                  dir_state['mtime'] = mtime
+                  if with_events:
+                     self.mqueue.invoke(self.parent.on_dir_changed, path=root, name=name, mtime=mtime)
+
+            for name in files:
+               full_path = os.path.join(root, name)
+               file_state = self.filestates[path].get(full_path, None)
+               try:
+                  mtime = os.path.getmtime(full_path)
+               except:
+                  continue
+
+               try:
+                  existing_paths.remove(full_path)
+               except ValueError:
+                  pass
+
+               if file_state is None:
+                  file_state = {'mtime': mtime, 'root': root, 'name':name, 'is_dir': False} 
+                  self.filestates[path][full_path] = file_state
+                  if with_events:
+                     self.mqueue.invoke(self.parent.on_file_created, path=root, name=name, mtime=mtime)
+               elif file_state['mtime'] != mtime:
+                  file_state['mtime'] = mtime
+                  if with_events:
+                     self.mqueue.invoke(self.parent.on_file_changed, path=root, name=name, mtime=mtime)
+      
+      else:
+         removed = False
+         full_path = path
+         root = os.path.dirname(path)
+         name = os.path.basename(path)
+         file_state = self.filestates[path].get(full_path, None)
+         try:
+            mtime = os.path.getmtime(full_path)
+         except:
+            removed = True
+
+         if not removed:
             try:
                existing_paths.remove(full_path)
             except ValueError:
@@ -113,7 +152,7 @@ class FSMonitorWorker(threading.Thread):
 
             if file_state is None:
                file_state = {'mtime': mtime, 'root': root, 'name':name, 'is_dir': False} 
-               self.filestates[full_path] = file_state
+               self.filestates[path][full_path] = file_state
                if with_events:
                   self.mqueue.invoke(self.parent.on_file_created, path=root, name=name, mtime=mtime)
             elif file_state['mtime'] != mtime:
@@ -122,8 +161,8 @@ class FSMonitorWorker(threading.Thread):
                   self.mqueue.invoke(self.parent.on_file_changed, path=root, name=name, mtime=mtime)
 
 
-      for path in existing_paths:
-         path_state = self.filestates.get(path, None)
+      for epath in existing_paths:
+         path_state = self.filestates[path].get(epath, None)
          if path_state:
             if path_state["is_dir"]:
                if with_events:
@@ -139,7 +178,7 @@ class FSMonitorWorker(threading.Thread):
                         path=path_state['root'], 
                         name=path_state['name'], 
                         mtime=time.time())
-            self.filestates.pop(path, None)
+            self.filestates[path].pop(epath, None)
             
 if __name__ == "__main__":
 

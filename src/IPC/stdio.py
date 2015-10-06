@@ -64,6 +64,10 @@ class StdioCom(object):
          if m and hasattr(m, "exposed"):
             args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
             api_src.append(g_method(lang, method, args, inspect.getdoc(m)))
+         elif m and hasattr(m, "exposed_raw"):
+            args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
+            api_src.append(g_method(lang, method, args, inspect.getdoc(m), m))
+
 
       api_src.append(g_end(lang))
       return "\n\n".join(api_src)
@@ -101,7 +105,7 @@ module.exports = (function() {
 
       return ""
 
-   def _generate_api_method(self, lang, method, args, doc):
+   def _generate_api_method(self, lang, method, args, doc, raw = None):
       if lang in ["javascript", "nodejs"]:
          space = ""
          if lang == "nodejs":
@@ -110,7 +114,14 @@ module.exports = (function() {
          args_call = []
          for arg in args:
             args_call.append("'%s': %s" % (arg, arg))
-         body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
+
+
+         body = ""         
+         if raw == None:
+            body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
+         else:
+            body = raw()
+
          if doc:
             doc = "%s/**\n%s\n%s */\n" % (space, "\n".join(["%s * %s" % (space, line) for line in doc.splitlines()]), space)
          else:
@@ -143,7 +154,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
       return ""
 
-   def _generate_doc_method(self, format, method, args, doc):
+   def _generate_doc_method(self, format, method, args, doc, raw = None):
 
       if format == "text":
          args_txt = ", ".join(args)
