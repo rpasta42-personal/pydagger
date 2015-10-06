@@ -92,7 +92,7 @@ module.exports = (function() {
     util.inherits(onering, EventEmitter);
     
     // Start transport
-    onering.prototype.connect = function() {
+    onering.prototype.start = function() {
         this._transport.start()
     }
 """ % dict(namespace=self.namespace)
@@ -113,6 +113,9 @@ module.exports = (function() {
          body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
          if doc:
             doc = "%s/**\n%s\n%s */\n" % (space, "\n".join(["%s * %s" % (space, line) for line in doc.splitlines()]), space)
+         else:
+            doc = ""
+
          return "%s%s%s.prototype.%s = function(%s) { %s }" % (doc, space, self.namespace, method, ", ".join(args), body)
 
       return ""
@@ -236,12 +239,21 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             if "result" in data_json or "error" in data_json:
                self._handle_client_result(data_son)
                return
+            
+            method = data_json["method"]
+            params = data_json["params"]
+            id = data_json.get("id", None)
+            try:
+               result = dispatcher[method](**params)
+               self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
+            except:
+               self._send_error(code=-32600, message = 'Internal Error: ...TODO add execption message here...', data = traceback.format_exc(), id=id)
 
-            response = self._jsonrpc.handle(data, dispatcher)
-            if response:
-               self._send(response.json)
-            else:
-               seld._send_error(code=-32600, message ="Could not generate response from provided input", data=data, id=None)
+            #response = self._jsonrpc.handle(data, dispatcher)
+            #if response:
+            #   self._send(response.json)
+            #else:
+            #   self._send_error(code=-32600, message ="Could not generate response from provided input", data=data, id=None)
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
