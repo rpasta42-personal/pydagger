@@ -5,6 +5,7 @@ misc/pip_pkg/pycloak
 # pip src copy directory
 misc/src
 
+*.whl
 *~
 *.pyc
 *.swp

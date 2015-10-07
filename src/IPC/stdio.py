@@ -65,7 +65,10 @@ class StdioCom(object):
             args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
             api_src.append(g_method(lang, method, args, inspect.getdoc(m)))
          elif m and hasattr(m, "exposed_raw"):
-            args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
+            if hasattr(m, "exposed_args"):
+               args = m.exposed_args
+            else:
+               args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
             api_src.append(g_method(lang, method, args, inspect.getdoc(m), m))
 
 
@@ -116,8 +119,7 @@ module.exports = (function() {
             args_call.append("'%s': %s" % (arg, arg))
 
 
-         body = ""         
-         if raw == None:
+         if raw is None:
             body = "return this._rpc.call('%s', {%s});" % (method, ", ".join(args_call))
          else:
             body = raw()
@@ -251,20 +253,23 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                self._handle_client_result(data_son)
                return
             
-            method = data_json["method"]
-            params = data_json["params"]
+            method = data_json.get("method", None)
+            params = data_json.get("params", None)
             id = data_json.get("id", None)
-            try:
-               result = dispatcher[method](**params)
-               self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
-            except:
-               self._send_error(code=-32600, message = 'Internal Error: ...TODO add execption message here...', data = traceback.format_exc(), id=id)
 
-            #response = self._jsonrpc.handle(data, dispatcher)
-            #if response:
-            #   self._send(response.json)
-            #else:
-            #   self._send_error(code=-32600, message ="Could not generate response from provided input", data=data, id=None)
+            if method is None or params is None:
+               self._send_error(code=-32600, message ="Invalid Request", id=id)
+            elif dispatcher.get(method, None) == None:
+               self._send_error(code=-32601, message = "Method Not Found", id=id)
+            else:
+               try:
+                  result = dispatcher[method](**params)
+                  self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
+               except Exception as ex:
+                  exc_type, exc_value, exc_traceback = sys.exc_info()
+                  exception_list = traceback.format_stack()
+                  
+                  self._send_error(code=-32000, message = exc_value, data = "\n".join(exception_list), id=id)
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False

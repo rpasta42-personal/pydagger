@@ -1,10 +1,13 @@
 default: build
 
 build:
-	make clean; cd misc/pip_pkg; python setup.py sdist; cp dist/PYCLOAK-0.0.1.tar.gz ../../
+	make clean && cd misc/pip_pkg; python setup.py bdist_wheel && cp dist/*.whl ../../ && echo $(git rev-list HEAD --count) >> version
 
 clean:
 	rm PYCLOAK-0.0.1.tar.gz; cd misc/pip_pkg; rm -rf pycloak dist MANIFEST
 
 install:
-	cd misc/pip_pkg; python3 setup.py install
+	pip install --upgrade PYCLOAK-0.0.1-py3-none-any.whl
+
+upload:
+	./upload_lib
