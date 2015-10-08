@@ -9,7 +9,6 @@ from jsonrpc import JSONRPCResponseManager, dispatcher
 from pycloak.events import Event
 
 class StdioClient(object):
-
    def __init__(self, server):
       self._server = server
 
