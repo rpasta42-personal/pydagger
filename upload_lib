@@ -1,5 +1,5 @@
 #!/bin/bash
 
-rsync -zzPc PYCLOAK-$(cat version)-py3-none-any.whl repo@projects.digithinkit.com:/repos/libs/
+rsync -zzPc /mist/pip_pkg/dist/PYCLOAK-$(cat version)-py3-none-any.whl repo@projects.digithinkit.com:/repos/libs/
 rsync -zzPc version repo@projects.digithinkit.com:/repos/libs/PYCLOAK-latest.ver
 
