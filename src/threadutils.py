@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import traceback
 try:
    from queue import Queue
 except:
@@ -68,7 +69,10 @@ class MessageQueue(object):
       self.processing = True
       while not self.empty():
          msg = self.dequeue()
-         msg.process(self)
+         try:
+            msg.process(self)
+         except:
+            print(traceback.format_exc())
       self.processing = False
 
       # queue any msgs added while processing was running
