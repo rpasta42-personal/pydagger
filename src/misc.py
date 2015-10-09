@@ -3,6 +3,7 @@ import notify2 as pynotify
 import subprocess, os, signal, pexpect, json
 from multiprocessing import Process
 import os.path
+import shutils
 
 #same as raise but can be used as function
 def throw(err): raise err
@@ -25,6 +26,10 @@ def init(prog_name, handle_error = None, debug = None):
 #you can use get_relative_path(__file__, '..')
 def get_abs_path_relative_to(current_file, relative_path = ''):
    return os.path.abspath(os.path.dirname(os.path.realpath(current_file)) + relative_path)
+
+
+def rm(path):
+   shutil.rmtree(path)
 
 def logical_xor(str1, str2):
     return bool(str1) ^ bool(str2)
