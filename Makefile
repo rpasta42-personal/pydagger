@@ -10,4 +10,4 @@ install:
 	pip install --upgrade misc/pip_pkg/dist/PYCLOAK-`cat version`-py3-none-any.whl
 
 upload:
-	./upload_lib
+	./bash/upload_lib
