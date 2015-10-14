@@ -1,6 +1,4 @@
-import subprocess, os, signal, pexpect, json
-from multiprocessing import Process
-import os.path
+import json
 from pycloak import shellutils
 
 #same as raise but can be used as function
@@ -36,6 +34,7 @@ def read_conf(path):
 if 0 == 1:
    from gi.repository import Gtk
    import notify2 as pynotify
+   import os
 
    def init_pynotify(prog_name):
       pynotify.init(prog_name)
