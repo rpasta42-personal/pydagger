@@ -1,4 +1,7 @@
-import shutils, os.path
+import shutil, os.path, signal, os
+
+def mkdir(name):
+   os.mkdir(name)
 
 #say you have app/src/main.py. To get path of project directory (app) from main.py
 #you can use get_relative_path(__file__, '..')

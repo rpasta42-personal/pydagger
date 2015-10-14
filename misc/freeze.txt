@@ -1,0 +1,6 @@
+pexpect==4.0.1
+ptyprocess==0.5
+PYCLOAK==0.1.53
+requests==2.8.1
+wheel==0.24.0
+xxhash==0.4.3

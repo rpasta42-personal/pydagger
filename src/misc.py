@@ -1,8 +1,7 @@
-from gi.repository import Gtk
-import notify2 as pynotify
 import subprocess, os, signal, pexpect, json
 from multiprocessing import Process
-import os.path, shellutils
+import os.path
+from pycloak import shellutils
 
 #same as raise but can be used as function
 #def throw(err): raise err
@@ -11,9 +10,6 @@ import os.path, shellutils
 #initialized in init() and used by Error
 #_handle_error = lambda *args: throw('need to initialize misc first')
 
-def init_pynotify(prog_name):
-   pynotify.init(prog_name)
-   #gobject.threads_init()
 
 ###small misc toools###
 
@@ -37,38 +33,46 @@ def read_conf(path):
          return json.loads(data)
    return None
 
-def notify(title, msg='', pic='onion', timeout=pynotify.EXPIRES_DEFAULT):
-   #if pic == 'icloak':
-   #   pic_path = '%s/data/tor_logo.png' % os.getcwd()
+if 0 == 1:
+   from gi.repository import Gtk
+   import notify2 as pynotify
 
-   if pic == 'default-warn':
-      pic_path = 'dialog-warning'
-   elif pic == 'onion-png':
-      pic_path = '%s/data/onion.png' % os.getcwd()
-   elif pic != None:
-      pic_path = '%s/data/%s.svg'  % (os.getcwd(), pic)
+   def init_pynotify(prog_name):
+      pynotify.init(prog_name)
+      #gobject.threads_init()
 
-   if pic == None:
-      n = pynotify.Notification(title, msg)
-   else:
-      n = pynotify.Notification(title, msg, pic_path)
+   def notify(title, msg='', pic='onion', timeout=pynotify.EXPIRES_DEFAULT):
+      #if pic == 'icloak':
+      #   pic_path = '%s/data/tor_logo.png' % os.getcwd()
 
-   n.set_timeout(timeout) #1000=1 sec
-   #n.set_urgency(pynotify.URGENCY_CRITICAL)
+      if pic == 'default-warn':
+         pic_path = 'dialog-warning'
+      elif pic == 'onion-png':
+         pic_path = '%s/data/onion.png' % os.getcwd()
+      elif pic != None:
+         pic_path = '%s/data/%s.svg'  % (os.getcwd(), pic)
 
-   if not n.show():
-      raise Exception('could not send notification')
+      if pic == None:
+         n = pynotify.Notification(title, msg)
+      else:
+         n = pynotify.Notification(title, msg, pic_path)
 
-   return n
+      n.set_timeout(timeout) #1000=1 sec
+      #n.set_urgency(pynotify.URGENCY_CRITICAL)
 
-def update_notification(n, title, msg, pic, timeout=None):
-   n.update(title, msg, pic)
-   if timeout:
-      n.set_timeout(timeout)
-      pass
+      if not n.show():
+         raise Exception('could not send notification')
 
-def alert(data=None):
-   msg = Gtk.MessageDialog(None, Gtk.DIALOG_MODAL, Gtk.MESSAGE_INFO, Gtk.BUTTONS_OK, data)
-   msg.run()
-   msg.destroy()
+      return n
+
+   def update_notification(n, title, msg, pic, timeout=None):
+      n.update(title, msg, pic)
+      if timeout:
+         n.set_timeout(timeout)
+         pass
+
+   def alert(data=None):
+      msg = Gtk.MessageDialog(None, Gtk.DIALOG_MODAL, Gtk.MESSAGE_INFO, Gtk.BUTTONS_OK, data)
+      msg.run()
+      msg.destroy()
 
