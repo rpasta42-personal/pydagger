@@ -5,7 +5,7 @@ def mkdir(name):
    os.mkdir(name)
 
 def ls(path):
-   os.listdir(path)
+   return os.listdir(path)
 
 #say you have app/src/main.py. To get path of project directory (app) from main.py
 #you can use get_relative_path(__file__, '..')
