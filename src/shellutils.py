@@ -7,6 +7,12 @@ def mkdir(name):
 def ls(path):
    return os.listdir(path)
 
+def rm(path):
+   shutil.rmtree(path)
+
+def cp(src, dst):
+   shutil.copytree(src, dst)
+
 #say you have app/src/main.py. To get path of project directory (app) from main.py
 #you can use get_relative_path(__file__, '..')
 def get_abs_path_relative_to(current_file, relative_path = ''):
@@ -15,9 +21,6 @@ def get_abs_path_relative_to(current_file, relative_path = ''):
 
 def file_exists(filePath):
    return filePath and os.path.exists(filePath)
-
-def rm(path):
-   shutil.rmtree(path)
 
 def write_file(filePath, data):
    with open(filePath, 'w') as f:
