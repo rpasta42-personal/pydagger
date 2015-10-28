@@ -1,0 +1,7 @@
+./ui.py dev generate doc --html
+./ui.py dev generate api --nodejs =wrapper
+./ui.py dev generate api --javascript = just functions without wrapper
+
+move generated js file into node_modules
+cp stdio.js into node_modules
+./ui.py service start
