@@ -5,7 +5,7 @@ import traceback
 import inspect
 import textwrap
 from pprint import pprint, pformat
-#from jsonrpc import JSONRPCResponseManager, dispatcher
+#from jsonrpc import JSONRPCResponseManager, self.dispatcher
 from pycloak.events import Event
 
 class StdioClient(object):
@@ -33,6 +33,7 @@ class StdioCom(object):
       self._send_events = {}
       self.on_call_error = Event()
       self.client = StdioClient(self)
+      self.dispatcher = dict()
       # list of callable members
       methods = [ method for method in dir(self) if callable(getattr(self, method)) ]
       for method in methods:
@@ -40,7 +41,7 @@ class StdioCom(object):
          m = getattr(self, method)
          # check if its exposed
          if m and hasattr(m, "exposed"):
-            dispatcher[method if not namespace else "%s.%s" % (namespace,method)] = m # add it to jsonrpc methods
+            self.dispatcher[method if not namespace else "%s.%s" % (namespace,method)] = m # add it to jsonrpc methods
 
    def generate_doc(self, format):
       return self._api_generator(format, "doc")
@@ -258,11 +259,11 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
             if method is None or params is None:
                self._send_error(code=-32600, message ="Invalid Request", id=id)
-            elif dispatcher.get(method, None) == None:
+            elif self.dispatcher.get(method, None) == None:
                self._send_error(code=-32601, message = "Method Not Found", id=id)
             else:
                try:
-                  result = dispatcher[method](**params)
+                  result = self.dispatcher[method](**params)
                   self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
                except Exception as ex:
                   exc_type, exc_value, exc_traceback = sys.exc_info()
