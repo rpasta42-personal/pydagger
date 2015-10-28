@@ -1,6 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+import unittest
+from pycloak import shellutils
 
-import sys
-sys.path.append('../src')
-import icloak
+#import sys
+class TestShellUtils(unittest.TestCase):
+   def setUp(self):
+      pass
+   def tearDown(self):
+      pass
+
+
 
