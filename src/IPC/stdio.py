@@ -5,7 +5,7 @@ import traceback
 import inspect
 import textwrap
 from pprint import pprint, pformat
-from jsonrpc import JSONRPCResponseManager, dispatcher
+#from jsonrpc import JSONRPCResponseManager, dispatcher
 from pycloak.events import Event
 
 class StdioClient(object):
@@ -27,7 +27,7 @@ class StdioCom(object):
    def __init__(self, namespace, protocol = "JSONRPC"):
       self.namespace = namespace
       self.run = False
-      self._jsonrpc = JSONRPCResponseManager()
+      #self._jsonrpc = JSONRPCResponseManager()
       self._send_id=0
       self.protocol = protocol
       self._send_events = {}
