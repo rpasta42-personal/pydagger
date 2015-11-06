@@ -1,8 +1,13 @@
 var app = require('app');  // Module to control application life.
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
+var fs = require('fs');
+var StartService = require('start-service');
 
 // Report crashes to our server.
-require('crash-reporter').start();
+const crashReporter = require('crash-reporter');
+crashReporter.start({
+   submitUrl: 'http://forty7.guru:1127/'
+});
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -10,30 +15,53 @@ var mainWindow = null;
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform != 'darwin') {
-    app.quit();
-  }
+   // On OS X it is common for applications and their menu bar
+   // to stay active until the user quits explicitly with Cmd + Q
+   if (process.platform != 'darwin')
+      app.quit();
+
+   fs.unlink('.tmp.conf');
 });
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 app.on('ready', function() {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600, frame: false, transparent: true, show: false});
+   var conf = {
+      'win-height'         : 600,
+      'win-width'          : 800,
+      'index-file'         : 'file://' + __dirname + '/index.html',
+      'inspect'            : true,
+      'server-js-api'      : 'updater', //generated js api from server script
+      'server-path'        : __dirname + '/../ui.py'
+   };
 
-  // and load the index.html of the app.
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
-  setTimeout(function() { mainWindow.show(); mainWindow.setAlwaysOnTop(false) }, 1000);
-  // Open the DevTools.
-  mainWindow.openDevTools();
+   if (process.argv.length == 1) {
+      var confStr = fs.readFileSync(process.argv[0]);
+      conf = JSON.parse(confStr);
+   }
+   fs.writeFile('.tmp.conf', JSON.stringify(conf));
 
-  // Emitted when the window is closed.
-  mainWindow.on('closed', function() {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
-  });
+   // Create the browser window.
+   mainWindow = new BrowserWindow({width: conf['win-width'], height: conf['win-height'], frame: false, transparent: true, show: false});
+
+   setTimeout(function() { mainWindow.show(); mainWindow.setAlwaysOnTop(false) }, 1000);
+
+   // Open the DevTools.
+   if (conf['inspect'])
+      mainWindow.openDevTools();
+
+   // and load the index.html of the app.
+   mainWindow.on('loaded', function () {
+      StartService.init();
+   });
+
+   mainWindow.loadUrl(conf['index-file']);
+
+   // Emitted when the window is closed.
+   mainWindow.on('closed', function() {
+      // Dereference the window object, usually you would store windows
+      // in an array if your app supports multi windows, this is the time
+      // when you should delete the corresponding element.
+      mainWindow = null;
+   });
 });

@@ -5,3 +5,5 @@
 move generated js file into node_modules
 cp stdio.js into node_modules
 ./ui.py service start
+
+gcolor2 = palette

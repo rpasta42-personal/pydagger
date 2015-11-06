@@ -4,17 +4,10 @@ import os, sys, time, argparse, json
 from pycloak.IPC.stdio import StdioCom
 from pycloak.events import Event
 
-storage = None
-
-
 class Server(StdioCom):
-   def __init__(self, namespace, store_path = None):
+   def __init__(self, namespace):
       super(Server, self).__init__(namespace)
-
-      self._store_path = store_path
-
-      #kk
-      self.on_some_event = Event()
+      self.on_some_event = Event() #kk
 
    #####################################################
    ## Helper methods
@@ -33,40 +26,38 @@ class Server(StdioCom):
 
    #####################################################
    ## Exposed methods
-
    def get_api_version(self):
       """Returns the service api version."""
       return "v0.1"
    get_api_version.exposed = True
 
-   def password(self):
-      """Returns an object prefilled with all fields pertaining to password entries"""
-      return """
-   var default_fields = %s;
-   for (var attrname in fields) { if (typeof fields[attrname] !== 'function') { default_fields[attrname] = fields[attrname];} }
-   return default_fields;""" % json.dumps(storage)
-   password.exposed_args = ['fields']
-   password.exposed_raw = True
-
-   def start_session(self, account, pub_key):
-      """Stars a session using the provided certificate to encrypt sensitive information."""
-      self.keyring = KeyStorage(os.path.join(self._store_path, account, "data.ring"))
-      return {"session": 1234, "pub_key": "kldswhjfkl;j4h3434fldkfjdsg013489f3"}
-   start_session.exposed = True
-
-   def save_note(self, entry):
-      """Stores a note object"""
-      return self.keyring.store_entry_dict(entry, storage.ENTRY_NOTE)
-   save_note.exposed = True
-
-   def shutdown(self):
-      """stops server"""
-      self.stop()
-   shutdown.exposed = True
-
+#   def password(self):
+#      """Returns an object prefilled with all fields pertaining to password entries"""
+#      return """
+#   var default_fields = %s;
+#   for (var attrname in fields) { if (typeof fields[attrname] !== 'function') { default_fields[attrname] = fields[attrname];} }
+#   return default_fields;""" % json.dumps(storage)
+#   password.exposed_args = ['fields']
+#   password.exposed_raw = True
+#
+#   def start_session(self, account, pub_key):
+#      """Stars a session using the provided certificate to encrypt sensitive information."""
+#      self.keyring = KeyStorage(os.path.join(self._store_path, account, "data.ring"))
+#      return {"session": 1234, "pub_key": "kldswhjfkl;j4h3434fldkfjdsg013489f3"}
+#   start_session.exposed = True
+#
+#   def save_note(self, entry):
+#      """Stores a note object"""
+#      return self.keyring.store_entry_dict(entry, storage.ENTRY_NOTE)
+#   save_note.exposed = True
+#
+#   def shutdown(self):
+#      """stops server"""
+#      self.stop()
+#   shutdown.exposed = True
+#
 
 if __name__ == "__main__":
-
    # argument parsing
    parser = argparse.ArgumentParser(description="One Ring keyring service")
    parser_sub = parser.add_subparsers(dest='mode', help="Developer tools for client applications")

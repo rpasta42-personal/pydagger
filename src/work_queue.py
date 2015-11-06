@@ -76,3 +76,4 @@ if __name__ == "__main__":
    wq.add(msg, 'bye')
    wq.tick()
    gtk.main()
+
