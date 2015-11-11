@@ -3,7 +3,6 @@ fudge==1.1.0
 mutagen==1.31
 pexpect==4.0.1
 ptyprocess==0.5
-PYCLOAK==0.1.56
 requests==2.8.1
 simplejson==3.8.1
 termcolor==1.1.0

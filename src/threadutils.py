@@ -6,6 +6,7 @@ try:
    from queue import Queue
 except:
    from Queue import Queue
+from pycloak.events import Event
 
 class MsgInvoke(object):
    """A method or function invocation message. Takes a callback and arguments which is later used
@@ -87,6 +88,23 @@ class MessageQueue(object):
       """Built in helper method to add a delayed method or function invocation message"""
       self.enqueue(MsgInvokeDelayed(callback, delay, args, kwargs))
 
+class EzThread:
+   def __init__(self, func, args=None, on_finish=None):
+      self.done = False
+
+      self.on_finish = Event()
+      if on_finish is not None:
+         self.on_finish += on_finish
+
+      def call():
+         if args == None:
+            on_finish(func())
+         else:
+            on_finish(func(*args))
+         self.done = True
+      self.thread = t = threading.Thread(target=call)
+      t.daemon = True
+      t.start()
 
 class ThreadQueue():
    #def __init__(...., busy_sleep = 0.05)??
@@ -181,4 +199,29 @@ if 1 == 0:
          t.join()
          print("Exiting...")
          break
+
+#EzThread example
+if False:
+   from pycloak.threadutils import EzThread
+   import time, threading
+
+   l = threading.Lock()
+
+   def worker(a, b):
+       i = 0
+       while i < 10:
+           i = i+1
+           with l:
+               print("%i %s %s" % (i, a, b))
+           time.sleep(0.5)
+       return 5
+
+   def blah(x):
+       print(x)
+
+   b = EzThread(worker, ["hello", "world"], blah)
+
+   #while b.done is not True:
+   #    time.sleep(1)
+   b.thread.join()
 

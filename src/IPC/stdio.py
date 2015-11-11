@@ -96,10 +96,10 @@ module.exports = (function() {
     }
 
     // Inherit event emitter functionality
-    util.inherits(onering, EventEmitter);
-    
+    util.inherits(onering, EventEmitter); //updater
+
     // Start transport
-    onering.prototype.start = function() {
+    onering.prototype.start = function() { //updater
         this._transport.start()
     }
 """ % dict(namespace=self.namespace)
@@ -191,7 +191,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
       evt =dict(on_result=Event(), on_error=Event())
       try:
          package = dict(jsonrpc="2.0", method=method, params=args, id=self._send_id)
-         self._send_events["e%s" % self._send_id] = evt 
+         self._send_events["e%s" % self._send_id] = evt
          self._send(json.dumps(package))
       except:
          self._send_events.pop("e%s" % self._send_id, None)
@@ -230,7 +230,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
    def _send_error(self, code, message, data, id):
       package = dict(jsonrpc="2.0", error=dict(code=code, message=message, data=data), id=id)
       self._send(json.dumps(package))
-               
+
    def _on_idle(self):
       """Handles internal communication parsing"""
       data = None
@@ -252,7 +252,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             if "result" in data_json or "error" in data_json:
                self._handle_client_result(data_son)
                return
-            
+
             method = data_json.get("method", None)
             params = data_json.get("params", None)
             id = data_json.get("id", None)
@@ -268,14 +268,14 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                except Exception as ex:
                   exc_type, exc_value, exc_traceback = sys.exc_info()
                   exception_list = traceback.format_stack()
-                  
+
                   self._send_error(code=-32000, message = exc_value, data = "\n".join(exception_list), id=id)
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
 
       self.on_idle()
-   
+
    def on_idle(self):
       pass
 
