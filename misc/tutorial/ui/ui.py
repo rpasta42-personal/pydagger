@@ -7,57 +7,47 @@ from pycloak.events import Event
 class Server(StdioCom):
    def __init__(self, namespace):
       super(Server, self).__init__(namespace)
-      self.on_some_event = Event() #kk
+      self.on_event = Event()
 
-   #####################################################
-   ## Helper methods
-
-   def iter_next_entry(self, entry_iter, type_id):
-      while True:
-         entry = entry_iter()
-         if entry == None:
-            break
-         elif entry.get_data_type() == type_id:
-            return entry.to_json()
-      return None
-
-   def iter_reset_entry(self):
-      return self.keyring.get_entries
-
-   #####################################################
-   ## Exposed methods
    def get_api_version(self):
       """Returns the service api version."""
       return "v0.1"
    get_api_version.exposed = True
 
-#   def password(self):
-#      """Returns an object prefilled with all fields pertaining to password entries"""
-#      return """
-#   var default_fields = %s;
-#   for (var attrname in fields) { if (typeof fields[attrname] !== 'function') { default_fields[attrname] = fields[attrname];} }
-#   return default_fields;""" % json.dumps(storage)
-#   password.exposed_args = ['fields']
-#   password.exposed_raw = True
-#
-#   def start_session(self, account, pub_key):
-#      """Stars a session using the provided certificate to encrypt sensitive information."""
-#      self.keyring = KeyStorage(os.path.join(self._store_path, account, "data.ring"))
-#      return {"session": 1234, "pub_key": "kldswhjfkl;j4h3434fldkfjdsg013489f3"}
-#   start_session.exposed = True
-#
-#   def save_note(self, entry):
-#      """Stores a note object"""
-#      return self.keyring.store_entry_dict(entry, storage.ENTRY_NOTE)
-#   save_note.exposed = True
-#
-#   def shutdown(self):
-#      """stops server"""
-#      self.stop()
-#   shutdown.exposed = True
-#
+   def call_me_back_brah(self):
+      def ret(result):
+         print(result)
+      def print_msg(msg):
+         print(msg)
+
+      test = self.call('hi', ['Felipe', 'Orellana'])
+      test['on_result'] += ret
+      test['on_error'] += print_msg
+      return 68
+   call_me_back_brah.exposed = True
 
 if __name__ == "__main__":
+   srv = Server('testApi')
+   if len(sys.argv) > 1:
+      if sys.argv[1] == 'print':
+         print(srv.generate_api('nodejs')) #or javascript or text or html
+      elif sys.argv[1] == 'file':
+         path = 'ui-pkg/node_modules/testapi.js' #sys.argv[2]
+         f = open(path, 'w')
+         f.write(srv.generate_api('nodejs'))
+
+   else:
+      import signal
+      def _signal_handler(signal, frame):
+         global srv
+         srv.stop()
+
+      signal.signal(signal.SIGINT, _signal_handler)
+      signal.signal(signal.SIGTERM, _signal_handler)
+
+      srv.start()
+
+if 0:
    # argument parsing
    parser = argparse.ArgumentParser(description="One Ring keyring service")
    parser_sub = parser.add_subparsers(dest='mode', help="Developer tools for client applications")

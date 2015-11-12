@@ -1,13 +1,6 @@
 var app = require('app');  // Module to control application life.
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
 var fs = require('fs');
-var StartService = require('start-service');
-
-// Report crashes to our server.
-const crashReporter = require('crash-reporter');
-crashReporter.start({
-   submitUrl: 'http://forty7.guru:1127/'
-});
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -19,8 +12,6 @@ app.on('window-all-closed', function() {
    // to stay active until the user quits explicitly with Cmd + Q
    if (process.platform != 'darwin')
       app.quit();
-
-   fs.unlink('.tmp.conf');
 });
 
 // This method will be called when Electron has finished
@@ -31,20 +22,20 @@ app.on('ready', function() {
       'win-width'          : 800,
       'index-file'         : 'file://' + __dirname + '/index.html',
       'inspect'            : true,
-      'server-js-api'      : 'updater', //generated js api from server script
-      'server-path'        : __dirname + '/../ui.py'
    };
-
-   if (process.argv.length == 1) {
-      var confStr = fs.readFileSync(process.argv[0]);
-      conf = JSON.parse(confStr);
-   }
-   fs.writeFile('.tmp.conf', JSON.stringify(conf));
+/*'width' : 802,
+ 'height' : 375,
+ 'center' : true,
+ 'frame' : false,
+ 'resizable ' : false,
+ 'transparent' : false,
+ 'overlay-scrollbars' : false,
+ 'title-bar-style': 'hidden'*/
 
    // Create the browser window.
-   mainWindow = new BrowserWindow({width: conf['win-width'], height: conf['win-height'], frame: false, transparent: true, show: false});
+   mainWindow = new BrowserWindow({width: conf['win-width'], height: conf['win-height'], frame: false, transparent: false, show: false});
 
-   setTimeout(function() { mainWindow.show(); mainWindow.setAlwaysOnTop(false) }, 1000);
+   //setTimeout(function() { mainWindow.show(); mainWindow.setAlwaysOnTop(false) }, 1000);
 
    // Open the DevTools.
    if (conf['inspect'])
@@ -52,11 +43,12 @@ app.on('ready', function() {
 
    // and load the index.html of the app.
    mainWindow.on('loaded', function () {
-      StartService.init();
+      alert('hi');
    });
 
    mainWindow.loadUrl(conf['index-file']);
 
+   mainWindow.show();
    // Emitted when the window is closed.
    mainWindow.on('closed', function() {
       // Dereference the window object, usually you would store windows

@@ -96,10 +96,10 @@ module.exports = (function() {
     }
 
     // Inherit event emitter functionality
-    util.inherits(onering, EventEmitter); //updater
+    util.inherits(%(namespace)s, EventEmitter); //updater
 
     // Start transport
-    onering.prototype.start = function() { //updater
+    %(namespace)s.prototype.start = function() { //updater
         this._transport.start()
     }
 """ % dict(namespace=self.namespace)
@@ -205,7 +205,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
       """Handles replies from client"""
       if "id" in data:
          # get and remove event if available
-         evt = self._send_event.pop("e%s" % data["id"], None)
+         evt = self._send_events.pop("e%s" % data["id"], None)
 
       if "result" in data:
          if evt and "on_result" in evt:
@@ -250,7 +250,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                return
 
             if "result" in data_json or "error" in data_json:
-               self._handle_client_result(data_son)
+               self._handle_client_response(data_json)
                return
 
             method = data_json.get("method", None)
