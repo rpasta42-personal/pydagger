@@ -1,0 +1,23 @@
+body {
+   background-color: #f0f0f0;
+}
+
+#updating-updater {
+   height: 100%;
+   width:   85%;
+	margin: auto;
+}
+
+#updating-updater-text {
+   text-align:       center;
+   position:         relative;
+   top:              30%;
+}
+
+#updating-updater-progress {
+   border:           5px;
+   text-align:       center;
+   position:         relative;
+   top:              30%;
+}
+

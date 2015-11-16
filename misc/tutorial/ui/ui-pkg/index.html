@@ -1,0 +1,34 @@
+<html>
+<head>
+   <script>
+      var testapi_mod = require('testapi');
+      var python_path = global.__dirname +'/../ui.py';
+      var testapi = new testapi_mod(python_path, []);
+
+      testapi.on('connected', function() {
+         console.log('connected');
+         testapi.get_api_version().result(function (result) {
+            console.log(result);
+         }).error(function (err) {
+            console.log(err);
+         });
+
+
+         testapi.call_me_back_brah().result(function (result) {
+            console.log(result);
+         }).error(function (err) {
+            console.log(err);
+         });
+      });
+      testapi.start();
+
+      function hi(a, b) {
+         alert('hi ' + a + ' ' + b);
+         return -1;
+      }
+   </script>
+</head>
+<body>
+   hi
+</body>
+</html>

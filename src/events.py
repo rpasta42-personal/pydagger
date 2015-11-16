@@ -1,6 +1,5 @@
 
 class Event(object):
-
    def __init__(self, init_handler=None):
       super(Event, self).__init__()
       self._signals = list()

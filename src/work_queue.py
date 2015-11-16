@@ -5,9 +5,8 @@ import time
 #def _queue_call = self.add()
 
 class WorkQueue(object):
-   def __init__(self, ileni):
+   def __init__(self):
       super(WorkQueue, self).__init__()
-      self.ileni = ileni
       self.q = Queue.Queue()
       self._busy = False
       self.last = None
@@ -34,8 +33,8 @@ class WorkQueue(object):
          print('queue: busy...' + self.last[0].__name__)
          return False
       self.q.put((task, args, kwargs))
-      if self.ileni.debug:
-         print('queue: adding %s to execution queue ' % task.__name__)
+      #if self.ileni.debug:
+      #   print('queue: adding %s to execution queue ' % task.__name__)
       return True
 
    def undo(self):
@@ -53,8 +52,8 @@ class WorkQueue(object):
    def tick(self):
       if not self.q.empty():
          task, args, kwargs = self.last = self.q.get()
-         if self.ileni.debug:
-            print('queue: executing %s' % task.__name__)
+         #if self.ileni.debug:
+         #   print('queue: executing %s' % task.__name__)
          task(*args, **kwargs)
          if self.q.empty():
             print('queue: just executed last call: %s' % task.__name__)
@@ -62,8 +61,8 @@ class WorkQueue(object):
       elif self.q.empty():
          print('queue: cannot execute empty queue')
          self._busy = False
-      elif self.ileni.debug:
-         print('queue: empty queue')
+      #elif self.ileni.debug:
+      #   print('queue: empty queue')
 
 if __name__ == "__main__":
    import gtk
@@ -77,3 +76,4 @@ if __name__ == "__main__":
    wq.add(msg, 'bye')
    wq.tick()
    gtk.main()
+
