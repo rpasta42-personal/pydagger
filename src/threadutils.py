@@ -102,7 +102,7 @@ class EzThread:
          else:
             on_finish(func(*args))
          self.done = True
-      self.thread = t = threading.Thread(target=call)
+      self.thread = self.t = threading.Thread(target=call)
       t.daemon = True
       t.start()
 
