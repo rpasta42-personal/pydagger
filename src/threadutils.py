@@ -103,8 +103,8 @@ class EzThread:
             on_finish(func(*args))
          self.done = True
       self.thread = self.t = threading.Thread(target=call)
-      t.daemon = True
-      t.start()
+      self.t.daemon = True
+      self.t.start()
 
 class ThreadQueue():
    #def __init__(...., busy_sleep = 0.05)??
