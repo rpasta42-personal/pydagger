@@ -1,12 +1,15 @@
 import sys
 import time
 import json
+import uuid
 import traceback
 import inspect
 import textwrap
+import threading
+
 from pprint import pprint, pformat
-#from jsonrpc import JSONRPCResponseManager, self.dispatcher
 from pycloak.events import Event
+from pycloak.threadutils import MessageQueue
 
 class StdioClient(object):
    def __init__(self, server):
@@ -22,6 +25,29 @@ class StdioClient(object):
 
       return proxymethod
 
+class StdinReader(threading.Thread):
+
+   def __init__(self, com):
+      self._com = com
+      self._running = False
+      super(StdinReader, self).__init__()
+
+   def stop(self):
+      self._running = False
+
+   def run(self):
+      self._running = True
+      while self._running:
+         try:
+            line = sys.stdin.readline()
+            if line:
+               data = line.strip()
+               self._com.mqueue.invoke(self._com._on_data, data)
+         except:
+            pass
+
+
+
 class StdioCom(object):
 
    def __init__(self, namespace, protocol = "JSONRPC"):
@@ -34,6 +60,9 @@ class StdioCom(object):
       self.on_call_error = Event()
       self.client = StdioClient(self)
       self.dispatcher = dict()
+      self.mqueue = MessageQueue()
+      self.stdin_reader = StdinReader(self)
+      self.stdin_reader.setDaemon(True)
       # list of callable members
       methods = [ method for method in dir(self) if callable(getattr(self, method)) ]
       for method in methods:
@@ -42,6 +71,14 @@ class StdioCom(object):
          # check if its exposed
          if m and hasattr(m, "exposed"):
             self.dispatcher[method if not namespace else "%s.%s" % (namespace,method)] = m # add it to jsonrpc methods
+
+   def __del__(self):
+      if self.stdin_reader:
+         self.stdin_reader.stop()
+         self.stdin_reader = None
+
+   def emit(self, event, *args):
+      self.call("@.%s" % event, list(args));
 
    def generate_doc(self, format):
       return self._api_generator(format, "doc")
@@ -92,6 +129,9 @@ module.exports = (function() {
         });
         this._rpc.on("error", function(error) {
             base.emit("error", error);
+        });
+        this._rpc.on("emit", function(evt, args) {
+            base.emit(evt, args)
         });
     }
 
@@ -178,28 +218,70 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
    def start(self):
       """Main stdio loop"""
       self.run = True
+      self.stdin_reader.start()
       while self.run:
+         self.mqueue.process()
          self._on_idle()
          time.sleep(0.1)
+
+   def _on_data(self, data):
+      if data:
+         if self.protocol == "JSONRPC":
+            try:
+               data_json = json.loads(data)
+            except:
+               self._send_error(code=-32700, message="Invalid json data", data=traceback.format_exc(), id=None)
+               return
+
+            if "result" in data_json or "error" in data_json:
+               self._handle_client_response(data_json)
+               return
+
+            method = data_json.get("method", None)
+            params = data_json.get("params", None)
+            id = data_json.get("id", None)
+
+            if method is None or params is None:
+               self._send_error(code=-32600, message ="Invalid Request", id=id)
+            elif self.dispatcher.get(method, None) == None:
+               self._send_error(code=-32601, message = "Method Not Found", id=id)
+            else:
+               try:
+                  result = self.dispatcher[method](**params)
+                  self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
+               except Exception as ex:
+                  exc_type, exc_value, exc_traceback = sys.exc_info()
+                  exception_list = traceback.format_stack()
+
+                  self._send_error(code=-32000, message = exc_value, data = "\n".join(exception_list), id=id)
+         else:
+            print("INVALID PROTOCOL: %s" % line)
+            self.run = False
+
+      self.on_idle()
+      
 
    def stop(self):
       """Stops stdio loop"""
       self.run = False
 
-   def call(self, method, args):
+   def call(self, method, args, ignore_events=False):
       """Performs rpc methods"""
       evt =dict(on_result=Event(), on_error=Event())
       try:
          package = dict(jsonrpc="2.0", method=method, params=args, id=self._send_id)
-         self._send_events["e%s" % self._send_id] = evt
+         if not ignore_events:
+            self._send_events["e%s" % self._send_id] = evt
          self._send(json.dumps(package))
       except:
-         self._send_events.pop("e%s" % self._send_id, None)
+         if not ignore_events:
+            self._send_events.pop("e%s" % self._send_id, None)
          return False
       finally:
          self._send_id+=1
 
-      return evt
+      if not ignore_events:
+         return evt
 
    def _handle_client_response(self, data):
       """Handles replies from client"""
@@ -233,6 +315,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
    def _on_idle(self):
       """Handles internal communication parsing"""
+      """
       data = None
       try:
          line = sys.stdin.readline()
@@ -273,6 +356,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
+      """
 
       self.on_idle()
 
