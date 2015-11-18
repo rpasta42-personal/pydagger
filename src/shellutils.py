@@ -56,8 +56,6 @@ def parse_mtab():
       mounts.append(item)
    return mounts
 
-def get_icloak_user_part():
-
 #same as running "ps -e" from bash
 #returns a list of processing where each process is a hash with pid, term, time and process name.
 def gnu_ps_e():
