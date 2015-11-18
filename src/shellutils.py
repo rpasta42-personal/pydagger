@@ -38,6 +38,26 @@ def read_file(filePath, nBytes=None, createIfNeeded=False):
       file(filePath, 'w').close()
    return None
 
+def parse_mtab():
+   mounts = []
+   mtab_str = shellutils.read_file('/etc/mtab')
+   entries = mtab_str.split('\n')
+   for entry in entries:
+      lst = entry.split(' ')
+      #http://serverfault.com/questions/267609/how-to-understand-etc-mtabm
+      item = {
+         'mount-device'    : lst[0],
+         'mount-point'     : lst[1],
+         'file-system'     : lst[2],
+         'mount-options'   : lst[3],
+         'dump-cmd'        : lst[4],
+         'fsck-order-boot' : lst[5]
+      }
+      mounts.append(item)
+   return mounts
+
+def get_icloak_user_part():
+
 #same as running "ps -e" from bash
 #returns a list of processing where each process is a hash with pid, term, time and process name.
 def gnu_ps_e():
@@ -76,6 +96,8 @@ def get_proc(search_by, critaria, processes=None):
          if proc_line['pid'] == critaria:
             return proc_line
    return None
+
+
 
 def kill_proc(proc, sig=signal.SIGINT):
    if not proc:
