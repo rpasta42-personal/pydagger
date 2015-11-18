@@ -1,4 +1,4 @@
-import shutil, os.path, signal, os, subprocess
+import shutil, os.path, signal, os, subprocess, json
 from multiprocessing import Process
 
 def mkdir(name):
@@ -37,6 +37,18 @@ def read_file(filePath, nBytes=None, createIfNeeded=False):
       assert not nBytes
       file(filePath, 'w').close()
    return None
+
+
+def write_json(path, json_data):
+   write_file(path, json.dumps(json_data) + '\n')
+
+def read_json(path):
+   if path:
+      data = read_file(path)
+      if data:
+         return json.loads(data)
+   return None
+
 
 def parse_mtab():
    mounts = []
@@ -139,4 +151,6 @@ def exec_get_stdout(command):
 
    task = subprocess.Popen(args, stdout=subprocess.PIPE)
    return task.communicate()
+
+
 
