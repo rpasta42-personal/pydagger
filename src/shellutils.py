@@ -1,4 +1,4 @@
-import shutil, os.path, signal, os, subprocess
+import shutil, os.path, signal, os, subprocess, json
 from multiprocessing import Process
 
 def mkdir(name):
@@ -38,56 +38,35 @@ def read_file(filePath, nBytes=None, createIfNeeded=False):
       file(filePath, 'w').close()
    return None
 
-#same as running "ps -e" from bash
-#returns a list of processing where each process is a hash with pid, term, time and process name.
-def gnu_ps_e():
-   processes = []
-   child = pexpect.spawn('ps -e', timeout=None)
+def write_json(path, json_data):
+   write_file(path, json.dumps(json_data) + '\n')
 
-   while True:
-      child.expect(["(?P<pid>[0-9]+)\s+(?P<term>[^\s]+)\s+(?P<timeran>[0-9:]+)\s+(?P<pname>[^\r]*)", pexpect.EOF])
-      #print(child.after)
-      if child.match == pexpect.EOF:
-         break
-      data = child.match.groupdict()
-
-      #next 2 lines will mess up ps
-      #if not child.isalive():
-      #   break
-
-      #print(data)
-      processes.append(data)
-   return processes
-
-#name or pid
-def get_proc(search_by, critaria, processes=None):
-   if not processes:
-      processes = gnu_ps_e()
-
-   assert logical_xor(search_by=='name', search_by=='pid')
-   if search_by == 'name':
-      for proc_line in processes:
-         proc_line['pid'] = int(proc_line['pid'])
-         if proc_line['pname'] == critaria:
-            return proc_line
-   if search_by == 'pid':
-      for proc_line in processes:
-         proc_line['pid'] = int(proc_line['pid'])
-         if proc_line['pid'] == critaria:
-            return proc_line
+def read_json(path):
+   if path:
+      data = read_file(path)
+      if data:
+         return json.loads(data)
    return None
 
-def kill_proc(proc, sig=signal.SIGINT):
-   if not proc:
-      return #raise Exception('trying to kill non-existing process')
-   elif isinstance(proc, basestring):
-      kill_proc(get_proc('name', proc), sig)
-   elif isinstance(proc, (int, long)):
-      os.kill(proc, sig)
-   else:
-      kill_proc(int(proc['pid']), sig)
-      #raise Exception('bad proc type')
+def parse_mtab():
+   mounts = []
+   mtab_str = shellutils.read_file('/etc/mtab')
+   entries = mtab_str.split('\n')
+   for entry in entries:
+      lst = entry.split(' ')
+      #http://serverfault.com/questions/267609/how-to-understand-etc-mtabm
+      item = {
+         'mount-device'    : lst[0],
+         'mount-point'     : lst[1],
+         'file-system'     : lst[2],
+         'mount-options'   : lst[3],
+         'dump-cmd'        : lst[4],
+         'fsck-order-boot' : lst[5]
+      }
+      mounts.append(item)
+   return mounts
 
+#new thread non-block
 def new_proc(callback):
    p = Process(target=callback).start()
 
@@ -116,7 +95,8 @@ def exec_prog_with_env(command, envBindings):
 #blocking, returns output
 def exec_get_stdout(command):
    args = command.split()
-
    task = subprocess.Popen(args, stdout=subprocess.PIPE)
    return task.communicate()
+
+
 

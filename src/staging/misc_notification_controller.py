@@ -20,16 +20,7 @@ def nothing_proc(*args):
 def run_periodically(seconds, func):
    gobject.timeout_add(seconds*1000, func)
 
-def write_conf(path, jsonConf):
-   shellutils.write_file(path, json.dumps(jsonConf) + '\n')
 
-def read_conf(path):
-   if path:
-      data = shellutils.read_file(path)
-      #data = data.encode('ascii', 'replace')
-      if data:
-         return json.loads(data)
-   return None
 
 if 0 == 1:
    from gi.repository import Gtk
