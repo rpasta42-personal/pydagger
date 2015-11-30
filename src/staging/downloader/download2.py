@@ -57,8 +57,6 @@ def get_conf(url, download_dir, useThreads):
    #bro_url = raw_url + '.brotli'
    logger.info('raw file url: %s' % raw_url)
 
-   url_to_download = raw_url
-
    #compress = int(conf['compression'])
    #if compress != 0 and compress != 1:
    #   logger.critical('Unsupported compression type: %i.' % compress)
@@ -66,8 +64,7 @@ def get_conf(url, download_dir, useThreads):
    #   import brotli
    #   url_to_download = bro_url
 
-   return conf, raw_path, json_path, data_path, hashes_path, hashes, resuming, threadQueue, url_to_download
-
+   return conf, raw_path, json_path, data_path, hashes_path, hashes, resuming, threadQueue, raw_url
 
 bad_block = None
 
@@ -88,8 +85,8 @@ def write_block_(data, hashes, final_file, offset, conf, progress, conf_path):
    write_conf(conf_path, conf)
 
 #single file version
-def download(url, download_dir, onProgress, useThreads=False): #onComplete?
-   conf, raw_path, json_path, data_path, hashes_path, hashes, resuming, threadQueue, download_url = get_conf(url, download_dir, useThreads)
+def download(json_url, download_dir, onProgress, useThreads=False): #onComplete?
+   conf, raw_path, json_path, data_path, hashes_path, hashes, resuming, threadQueue, raw_url = get_conf(json_url, download_dir, useThreads)
 
    write_block = write_block_
    if threadQueue is not None:
@@ -97,7 +94,7 @@ def download(url, download_dir, onProgress, useThreads=False): #onComplete?
 
    if not resuming:
       write_conf(json_path, conf)
-      hashes = json_from_url(url + '.hashes')
+      hashes = json_from_url(json_url + '.hashes')
       write_conf(hashes_path, hashes)
       if file_exists(raw_path):
          shutil.rmtree(raw_path)
@@ -120,9 +117,10 @@ def download(url, download_dir, onProgress, useThreads=False): #onComplete?
 
       header = { 'Range': 'bytes=%d-%d' % (offset, end) }
       #Stream=False makes it faster
-      r = requests.get(download_url, headers=header, stream=False, verify=True, allow_redirects=True)
+      r = requests.get(raw_url, headers=header, stream=False, verify=True, allow_redirects=True)
 
       if r.status_code != 206:
+         msg = 'Wrong code for getting chunk. Got %i' % r.status_code
          raise Status(status.DOWNLOAD, msg)
       data = r.content
       r.close()
