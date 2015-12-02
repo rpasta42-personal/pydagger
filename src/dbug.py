@@ -185,7 +185,7 @@ class Benchmark(object):
       self.start = self.timer()
       return self
 
-   def __exit(self, *args):
+   def __exit__(self, *args):
       self.end = self.timer()
       if self.disable_gc and self.gc_state:
          gc.enable()
