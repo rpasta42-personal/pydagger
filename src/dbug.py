@@ -2,6 +2,9 @@ import os
 import os.path
 import sys
 import inspect
+import time
+import timeit
+import gc
 from termcolor import colored, cprint
 
 halt_flags = dict()
@@ -151,3 +154,44 @@ class Tracer(object):
 	
 	def __exit__(self, type, value, traceback):
 		self.stop()
+
+class Benchmark(object):
+   """Quick benchmarking class use it with the 'with' statement:
+   with Benchmark():
+      [... some code you want to benchmark ...]
+
+   or pass a call back to print your own output
+
+   def benchmark_result(interval):
+      print("Time taken: %s" % interval)
+
+   with Benchmark(benchmark_result):
+      [... some code you want to benchmark ...]
+
+   """
+
+   def __init__(self, result_callback = None, timer=None, disable_gc=False):
+      if timer is None:
+         timer = timeit.default_timer # using platform specific timer
+      self.timer = timer
+      self.disable_gc = disable_gc
+      self.start = self.end = self.interval = None
+      self.result_callback = result_callback
+
+   def __enter__(self):
+      if self.disable_gc:
+         self.gc_state = gc.isenabled()
+         gc.disable()
+      self.start = self.timer()
+      return self
+
+   def __exit(self, *args):
+      self.end = self.timer()
+      if self.disable_gc and self.gc_state:
+         gc.enable()
+      self.interval = self.end - self.start
+      if self.result_callback:
+         self.result_callback(self.interval)
+      else:
+         print(" === [BENCHMARK] Time taken: %s" % self.interval)
+
