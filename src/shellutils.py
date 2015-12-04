@@ -50,7 +50,7 @@ def read_json(path):
 
 def parse_mtab():
    mounts = []
-   mtab_str = shellutils.read_file('/etc/mtab')
+   mtab_str = read_file('/etc/mtab').strip()
    entries = mtab_str.split('\n')
    for entry in entries:
       lst = entry.split(' ')
