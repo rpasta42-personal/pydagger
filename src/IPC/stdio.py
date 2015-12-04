@@ -45,7 +45,7 @@ class StdinReader(threading.Thread):
                self._com.mqueue.invoke(self._com._on_data, data)
          except:
             pass
-
+         time.sleep(0.1)
 
 
 class StdioCom(object):
@@ -259,7 +259,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             self.run = False
 
       self.on_idle()
-      
+
 
    def stop(self):
       """Stops stdio loop"""
@@ -357,7 +357,6 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
       """
-
       self.on_idle()
 
    def on_idle(self):

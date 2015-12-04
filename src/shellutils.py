@@ -67,7 +67,7 @@ def parse_mtab():
    return mounts
 
 #new thread non-block
-def new_proc(callback):
+def func_thread(callback):
    p = Process(target=callback).start()
 
 #non-blocking
