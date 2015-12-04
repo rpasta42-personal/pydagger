@@ -249,7 +249,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                try:
                   result = self.dispatcher[method](**params)
                   self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
-               except Exception as ex:
+               except:
                   exc_type, exc_value, exc_traceback = sys.exc_info()
                   exception_list = traceback.format_stack()
 
