@@ -79,6 +79,9 @@ def exec_prog(command):
    p = Process(target=lambda:subprocess.call(args))
    p.start()
 
+def exec_sudo(cmd):
+   return exec_get_stdout('gksudo %s' % cmd)
+
 #TODO: use arrays instead of map/dict?
 def exec_prog_with_env(command, envBindings):
    args = command.split()

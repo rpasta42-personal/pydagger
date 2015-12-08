@@ -253,7 +253,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                   exc_type, exc_value, exc_traceback = sys.exc_info()
                   exception_list = traceback.format_stack()
 
-                  self._send_error(code=-32000, message = exc_value, data = "\n".join(exception_list), id=id)
+                  self._send_error(code=-32000, message = str(exc_value), data = "\n".join(exception_list), id=id)
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
