@@ -1,6 +1,6 @@
 
 
-def dictkey(d, key, default):
+def dict_get_recursive(d, key, default):
    if key in d:
       return d[key]
    else:
