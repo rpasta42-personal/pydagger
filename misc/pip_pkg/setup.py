@@ -22,7 +22,7 @@ setup (
    author="Kostyantyn Kovalskyy",
    author_email="konstantin@icloak.org",
    #packages=["pycloak", "pycloak.test"],
-   packages=["pycloak", "pycloak.IPC"],
+   packages=["pycloak", "pycloak.IPC", "pycloak.mac"],
    package_dir={"pycloak": "../../src"},
    #binary files go here
    #scripts=['bin/ifs-mount', 'bin/ifs-test'],

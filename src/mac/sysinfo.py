@@ -2,7 +2,7 @@ import os
 import sys
 import plistlib
 import shutil
-
+import subprocess
 from subprocess import Popen, PIPE
 
 def findMountPoint(path):
@@ -43,7 +43,7 @@ def becomeAdmin(exec_path, debug=False):
       if debug:
          print(applescript)
 
-      p = subprocess.Popen(["osascript", "-e", applescript], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+      p = Popen(["osascript", "-e", applescript], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
       if debug:
          for line in p.stdout:
          	sys.stdout.write(line)
