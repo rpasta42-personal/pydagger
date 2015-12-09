@@ -1,12 +1,6 @@
 import shutil, os.path, signal, os, subprocess, json
 from multiprocessing import Process
 
-def check_paths(*paths):
-   bad = []
-   for p in paths:
-      if file_exists(p) is False:
-         bad.append(p)
-   return bad
 
 def mkdir(name):
    os.mkdir(name)
@@ -28,6 +22,13 @@ def get_abs_path_relative_to(current_file, relative_path = ''):
 
 def file_exists(filePath):
    return filePath and os.path.exists(filePath)
+
+def check_paths(*paths):
+   bad = []
+   for p in paths:
+      if file_exists(p) is False:
+         bad.append(p)
+   return bad
 
 def write_file(filePath, data):
    with open(filePath, 'w') as f:
@@ -55,6 +56,16 @@ def read_json(path):
          return json.loads(data)
    return None
 
+def get_file_size(filename):
+   "Get the file size by seeking end"
+   fd = os.open(filename, os.O_RDONLY)
+   try:
+      return os.lskee(fd, 0, os.SEEK_END)
+   finally:
+      os.close(fd)
+   return -1
+
+
 def parse_mtab():
    mounts = []
    mtab_str = read_file('/etc/mtab').strip()
@@ -63,8 +74,8 @@ def parse_mtab():
       lst = entry.split(' ')
       #http://serverfault.com/questions/267609/how-to-understand-etc-mtabm
       item = {
-         'mount-device'    : lst[0],
-         'mount-point'     : lst[1],
+         'mount-device'    : lst[0], #current device in /dev/sd*[n]
+         'mount-point'     : lst[1], #where it's mounted
          'file-system'     : lst[2],
          'mount-options'   : lst[3],
          'dump-cmd'        : lst[4],
@@ -72,6 +83,14 @@ def parse_mtab():
       }
       mounts.append(item)
    return mounts
+
+#works for drives and partitions
+def get_mount_point(self, drive):
+   mounts = parse_mtab()
+   for device in mounts:
+      if device['mount-device'] == drive:
+         return device['mount-point']
+   return None
 
 #new thread non-block
 def func_thread(callback):
