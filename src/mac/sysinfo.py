@@ -27,6 +27,7 @@ def findMountPoint(path):
 def becomeAdmin(exec_path, debug=False):
    try:
       os.setuid(0)
+      return False
    except:
       # if not admins prompt for admin password
       # original path was: "/../MacOS/ICLOAK Standalone Updater " + VERSION[0].upper() + VERSION[1:len(VERSION)]
@@ -49,5 +50,5 @@ def becomeAdmin(exec_path, debug=False):
          	sys.stdout.write(line)
          p.wait()
 
-      sys.exit()
+      return True
 
