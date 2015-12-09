@@ -19,23 +19,19 @@ def isUserAdmin():
 
 def becomeAdmin(exec_path, debug=False, wait=False):
    if not isUserAdmin():
-      if hasattr(sys, 'frozen'):
-         path = os.path.abspath(sys.executable)
-         args = sys.argv
-      else:
-         path = sys.executable
-         args = sys.argv
+      path = sys.executable
+      args = sys.argv
 
       cmd = '"%s"' % path
       params = " ".join(['"%s"' % (x,) for x in args])
       cmdDir = ''
-      chowCmd = win32con.SW.SHOWNORMAL
+      showCmd = win32con.SW_SHOWNORMAL
       procInfo = ShellExecuteEx(
          nShow=showCmd,
          fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
-         lbVerb='runas',
+         lpVerb='runas',
          lpFile=cmd,
-         lpParams=params)
+         lpParameters=params)
 
       if wait:
          procHandle = procInfo['hProcess']
@@ -43,7 +39,9 @@ def becomeAdmin(exec_path, debug=False, wait=False):
          rc = win32process.GetExitCodeProcess(procHandle)
       else:
          rc = None
-   return rc
+
+      return True
+   return False
 
       
    
