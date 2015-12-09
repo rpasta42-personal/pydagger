@@ -1,6 +1,13 @@
 import shutil, os.path, signal, os, subprocess, json
 from multiprocessing import Process
 
+def check_paths(*paths):
+   bad = []
+   for p in paths:
+      if file_exists(p) is False:
+         bad.append(p)
+   return bad
+
 def mkdir(name):
    os.mkdir(name)
 
