@@ -59,7 +59,7 @@ def get_file_size(filename):
    "Get the file size by seeking end"
    fd = os.open(filename, os.O_RDONLY)
    try:
-      return os.lskee(fd, 0, os.SEEK_END)
+      return os.lseek(fd, 0, os.SEEK_END)
    finally:
       os.close(fd)
    return -1
