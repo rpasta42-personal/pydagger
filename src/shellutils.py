@@ -1,7 +1,6 @@
 import shutil, os.path, signal, os, subprocess, json
 from multiprocessing import Process
 
-
 def mkdir(name):
    os.mkdir(name)
 
@@ -85,7 +84,7 @@ def parse_mtab():
    return mounts
 
 #works for drives and partitions
-def get_mount_point(self, drive):
+def get_mount_point(drive):
    mounts = parse_mtab()
    for device in mounts:
       if device['mount-device'] == drive:
