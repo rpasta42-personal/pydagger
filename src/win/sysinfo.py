@@ -17,7 +17,7 @@ def isUserAdmin():
       traceback.print_exc()
       return False
 
-def becomeAdmin(exec_path, debug=False, wait=False):
+def becomeAdmin(exec_path, debug=False, wait=False, show_shell=True):
    if not isUserAdmin():
       path = sys.executable
       args = sys.argv
@@ -25,7 +25,11 @@ def becomeAdmin(exec_path, debug=False, wait=False):
       cmd = '"%s"' % path
       params = " ".join(['"%s"' % (x,) for x in args])
       cmdDir = ''
-      showCmd = win32con.SW_SHOWNORMAL
+      if show_shell:
+         showCmd = win32con.SW_SHOWNORMAL
+      else:
+         showCmd = win32con.SW_HIDE
+
       procInfo = ShellExecuteEx(
          nShow=showCmd,
          fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
