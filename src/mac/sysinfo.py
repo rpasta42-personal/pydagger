@@ -24,9 +24,9 @@ def findMountPoint(path):
 			result[key] = value
 
 	if exit_code == 0:
-		return (True, result)
+		return (True, result['Mount Point'])
 
-	return (False, '')
+	return (False, err if err is not None else '')
 
 def becomeAdmin(exec_path, debug=False):
    try:
