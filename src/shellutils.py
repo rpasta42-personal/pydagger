@@ -16,7 +16,7 @@ def is_file(path):
 def is_dir(path):
    return os.path.isdir(path)
 
-def is_link(path)
+def is_link(path):
    return os.path.islink(path)
 
 def is_mount_point(path):
