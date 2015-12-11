@@ -10,8 +10,20 @@ def mkdir(name):
 def ls(path):
    return os.listdir(path)
 
+def is_file(path):
+   return os.path.isfile(path)
+
+def is_dir(path):
+   return os.path.isdir(path)
+
 def rm(path):
-   shutil.rmtree(path)
+   if is_dir(path):
+      #os.removedirs(path) #only works for empty
+      shutil.rmtree(path)
+   elif is_file(path):
+      os.remove(path)
+   else:
+      raise Exception('Trying to remove unknown file type')
 
 def cp(src, dst):
    shutil.copytree(src, dst)
