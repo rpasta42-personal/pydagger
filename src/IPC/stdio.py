@@ -11,6 +11,9 @@ from pprint import pprint, pformat
 from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
 
+import logging
+logger = logging.getLogger(__name__)
+
 class StdioClient(object):
    def __init__(self, server):
       self._server = server
@@ -229,6 +232,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
          if self.protocol == "JSONRPC":
             try:
                data_json = json.loads(data)
+
             except:
                self._send_error(code=-32700, message="Invalid json data", data=traceback.format_exc(), id=None)
                return
@@ -241,6 +245,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             params = data_json.get("params", None)
             id = data_json.get("id", None)
 
+            logger.info('[electron] %s(%s)' % (method, params))
             if method is None or params is None:
                self._send_error(code=-32600, message ="Invalid Request", id=id)
             elif self.dispatcher.get(method, None) == None:
@@ -255,6 +260,8 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                   exc_str = traceback.format_exc()
                   #self._send_error(code=-32000, message = str(exc_value), data = "\n".join(exception_list), id=id)
                   self._send_error(code=-32000, message = str(exc_value), data = exc_str, id=id)
+                  logger.error('Exception type: %s; Exception value: %s' %(exc_type, exc_value))
+                  logger.error(exc_str)
 
          else:
             print("INVALID PROTOCOL: %s" % line)
