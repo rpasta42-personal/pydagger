@@ -269,9 +269,11 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
    def call(self, method, args, ignore_events=False):
       """Performs rpc methods"""
-      evt =dict(on_result=Event(), on_error=Event())
+      evt = dict(on_result=Event(), on_error=Event())
       try:
-         package = dict(jsonrpc="2.0", method=method, params=args, id=self._send_id)
+         package = dict(jsonrpc="2.0", method=method, params=args)
+         if method[0] != '@':
+            package['id'] = self._send_id
          if not ignore_events:
             self._send_events["e%s" % self._send_id] = evt
          self._send(json.dumps(package))
