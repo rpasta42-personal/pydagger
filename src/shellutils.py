@@ -2,7 +2,10 @@ import shutil, os.path, signal, os, subprocess, json
 from multiprocessing import Process
 
 def mkdir(name):
-   os.mkdir(name)
+   """recursively create dirs (like mkdir -p)"""
+   #os.mkdir(name) #make one directory
+   #exists_ok prevents errors when dir already exists
+   os.mkdirs(name, exists_ok=True)
 
 def ls(path):
    return os.listdir(path)
