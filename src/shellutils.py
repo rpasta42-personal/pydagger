@@ -16,11 +16,18 @@ def is_file(path):
 def is_dir(path):
    return os.path.isdir(path)
 
+def is_link(path)
+   return os.path.islink(path)
+
+def is_mount_point(path):
+   return os.path.ismount(path)
+
 def rm(path):
+   """Removes files and directories"""
    if is_dir(path):
       #os.removedirs(path) #only works for empty
       shutil.rmtree(path)
-   elif is_file(path):
+   elif is_file(path) or is_link(path):
       os.remove(path)
    else:
       raise Exception('Trying to remove unknown file type')
