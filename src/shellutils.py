@@ -149,15 +149,16 @@ def exec_get_stdout(command):
    return task.communicate()
 
 class ProgressBar(object):
-    def __init__(self):
+    def __init__(self, max_width = 20):
         self.spinner = ['/', '-', '\\', '-']
         self.spinner_tick = 0
+        self.max_width = max_width
 
-    def update(self, p, label="", max_size=20):
+    def update(self, p, label=""):
         self.spinner_tick += 1
-        i = int((p * max_size) / 100)
+        i = int((p * self.max_width) / 100)
         s = self.spinner[self.spinner_tick % len(self.spinner)]
-        bar = "%s%s%s" % ("".join(['='] * i), s, "".join([' '] * (max_size - i - 1)))
+        bar = "%s%s%s" % ("".join(['='] * i), s, "".join([' '] * (self.max_width - i - 1)))
         sys.stdout.write("\r[%s] %s" % (bar, label))
         sys.stdout.flush()
 
