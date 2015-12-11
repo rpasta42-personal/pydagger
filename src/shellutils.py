@@ -1,11 +1,11 @@
-import shutil, os.path, signal, os, subprocess, json
+import shutil, os.path, signal, os, subprocess, json, sys
 from multiprocessing import Process
 
 def mkdir(name):
    """recursively create dirs (like mkdir -p)"""
    #os.mkdir(name) #make one directory
    #exists_ok prevents errors when dir already exists
-   os.makedirs(name, exists_ok=True)
+   os.makedirs(name, exist_ok=True)
 
 def ls(path):
    return os.listdir(path)
@@ -148,5 +148,17 @@ def exec_get_stdout(command):
    task = subprocess.Popen(args, stdout=subprocess.PIPE)
    return task.communicate()
 
+class ProgressBar(object):
+    def __init__(self):
+        self.spinner = ['/', '-', '\\', '-']
+        self.spinner_tick = 0
+
+    def update(self, p, label="", max_size=20):
+        self.spinner_tick += 1
+        i = int((p * max_size) / 100)
+        s = self.spinner[self.spinner_tick % len(self.spinner)]
+        bar = "%s%s%s" % ("".join(['='] * i), s, "".join([' '] * (max_size - i - 1)))
+        sys.stdout.write("\r[%s] %s" % (bar, label))
+        sys.stdout.flush()
 
 
