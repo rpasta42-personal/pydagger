@@ -51,13 +51,19 @@ def check_paths(*paths):
          bad.append(p)
    return bad
 
-def write_file(filePath, data):
-   with open(filePath, 'w') as f:
+def write_file(filePath, data, binary=False):
+   flags = 'w'
+   if binary:
+      flags = 'wb'
+   with open(filePath, flags) as f:
       return f.write(data)
 
-def read_file(filePath, nBytes=None, createIfNeeded=False):
+def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
    if file_exists(filePath):
-      with open(filePath, 'r') as f:
+      flags = 'r'
+      if binary:
+         flags = 'rb'
+      with open(filePath, flags) as f:
          if nBytes:
             return f.read(nBytes)
          else:
