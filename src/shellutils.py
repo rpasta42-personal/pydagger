@@ -1,15 +1,36 @@
-import shutil, os.path, signal, os, subprocess, json
+import shutil, os.path, signal, os, subprocess, json, sys
 from multiprocessing import Process
 
-
 def mkdir(name):
-   os.mkdir(name)
+   """recursively create dirs (like mkdir -p)"""
+   #os.mkdir(name) #make one directory
+   #exists_ok prevents errors when dir already exists
+   os.makedirs(name, exist_ok=True)
 
 def ls(path):
    return os.listdir(path)
 
+def is_file(path):
+   return os.path.isfile(path)
+
+def is_dir(path):
+   return os.path.isdir(path)
+
+def is_link(path):
+   return os.path.islink(path)
+
+def is_mount_point(path):
+   return os.path.ismount(path)
+
 def rm(path):
-   shutil.rmtree(path)
+   """Removes files and directories"""
+   if is_dir(path):
+      #os.removedirs(path) #only works for empty
+      shutil.rmtree(path)
+   elif is_file(path) or is_link(path):
+      os.remove(path)
+   else:
+      raise Exception('Trying to remove unknown file type')
 
 def cp(src, dst):
    shutil.copytree(src, dst)
@@ -30,13 +51,19 @@ def check_paths(*paths):
          bad.append(p)
    return bad
 
-def write_file(filePath, data):
-   with open(filePath, 'w') as f:
+def write_file(filePath, data, binary=False):
+   flags = 'w'
+   if binary:
+      flags = 'wb'
+   with open(filePath, flags) as f:
       return f.write(data)
 
-def read_file(filePath, nBytes=None, createIfNeeded=False):
+def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
    if file_exists(filePath):
-      with open(filePath, 'r') as f:
+      flags = 'r'
+      if binary:
+         flags = 'rb'
+      with open(filePath, flags) as f:
          if nBytes:
             return f.read(nBytes)
          else:
@@ -60,7 +87,7 @@ def get_file_size(filename):
    "Get the file size by seeking end"
    fd = os.open(filename, os.O_RDONLY)
    try:
-      return os.lskee(fd, 0, os.SEEK_END)
+      return os.lseek(fd, 0, os.SEEK_END)
    finally:
       os.close(fd)
    return -1
@@ -85,7 +112,7 @@ def parse_mtab():
    return mounts
 
 #works for drives and partitions
-def get_mount_point(self, drive):
+def get_mount_point(drive):
    mounts = parse_mtab()
    for device in mounts:
       if device['mount-device'] == drive:
@@ -127,5 +154,18 @@ def exec_get_stdout(command):
    task = subprocess.Popen(args, stdout=subprocess.PIPE)
    return task.communicate()
 
+class ProgressBar(object):
+    def __init__(self, max_width = 20):
+        self.spinner = ['/', '-', '\\', '-']
+        self.spinner_tick = 0
+        self.max_width = max_width
+
+    def update(self, p, label=""):
+        self.spinner_tick += 1
+        i = int((p * self.max_width) / 100)
+        s = self.spinner[self.spinner_tick % len(self.spinner)]
+        bar = "%s%s%s" % ("".join(['='] * i), s, "".join([' '] * (self.max_width - i - 1)))
+        sys.stdout.write("\r[%s] %s" % (bar, label))
+        sys.stdout.flush()
 
 

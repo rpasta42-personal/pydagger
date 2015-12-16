@@ -8,6 +8,10 @@ from subprocess import Popen, PIPE
 def findMountPoint(path):
 	p1 = Popen(['diskutil', 'info', path], stdout=PIPE)
 	(output, err) = p1.communicate()
+	if output is not None:
+		output = output.decode('utf8')
+	if err is not None:
+		err = err.decode('utf8')
 	exit_code = p1.wait()
 
 	result = dict()
@@ -20,15 +24,14 @@ def findMountPoint(path):
 			result[key] = value
 
 	if exit_code == 0:
-		return (True, result)
+		return (True, result['Mount Point'])
 
-	return (False, '')
+	return (False, err if err is not None else '')
 
 def becomeAdmin(exec_path, debug=False):
    try:
       os.setuid(0)
-      return False
-   except:
+   except Exception as e:
       # if not admins prompt for admin password
       # original path was: "/../MacOS/ICLOAK Standalone Updater " + VERSION[0].upper() + VERSION[1:len(VERSION)]
       # on frozen app we should be able to get path from sys
@@ -46,4 +49,6 @@ def becomeAdmin(exec_path, debug=False):
 
       p = Popen(["osascript", "-e", applescript], stdin=None, stdout=None, stderr=None)
       return True
+   return False
+
 

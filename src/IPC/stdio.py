@@ -11,6 +11,9 @@ from pprint import pprint, pformat
 from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
 
+import logging
+logger = logging.getLogger(__name__)
+
 class StdioClient(object):
    def __init__(self, server):
       self._server = server
@@ -229,6 +232,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
          if self.protocol == "JSONRPC":
             try:
                data_json = json.loads(data)
+
             except:
                self._send_error(code=-32700, message="Invalid json data", data=traceback.format_exc(), id=None)
                return
@@ -241,6 +245,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             params = data_json.get("params", None)
             id = data_json.get("id", None)
 
+            logger.info('[electron] %s(%s)' % (method, params))
             if method is None or params is None:
                self._send_error(code=-32600, message ="Invalid Request", id=id)
             elif self.dispatcher.get(method, None) == None:
@@ -251,9 +256,13 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                   self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
                except:
                   exc_type, exc_value, exc_traceback = sys.exc_info()
-                  exception_list = traceback.format_stack()
+                  #exception_list = traceback.format_stack()
+                  exc_str = traceback.format_exc()
+                  #self._send_error(code=-32000, message = str(exc_value), data = "\n".join(exception_list), id=id)
+                  self._send_error(code=-32000, message = str(exc_value), data = exc_str, id=id)
+                  logger.error('Exception type: %s; Exception value: %s' %(exc_type, exc_value))
+                  logger.error(exc_str)
 
-                  self._send_error(code=-32000, message = str(exc_value), data = "\n".join(exception_list), id=id)
          else:
             print("INVALID PROTOCOL: %s" % line)
             self.run = False
@@ -267,9 +276,11 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
    def call(self, method, args, ignore_events=False):
       """Performs rpc methods"""
-      evt =dict(on_result=Event(), on_error=Event())
+      evt = dict(on_result=Event(), on_error=Event())
       try:
-         package = dict(jsonrpc="2.0", method=method, params=args, id=self._send_id)
+         package = dict(jsonrpc="2.0", method=method, params=args)
+         if method[0] != '@':
+            package['id'] = self._send_id
          if not ignore_events:
             self._send_events["e%s" % self._send_id] = evt
          self._send(json.dumps(package))
