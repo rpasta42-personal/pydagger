@@ -33,7 +33,13 @@ def rm(path):
       raise Exception('Trying to remove unknown file type')
 
 def cp(src, dst):
-   shutil.copytree(src, dst)
+   if is_dir(src):
+      shutil.copytree(src, dst)
+   elif is_file(src):
+      shutil.copy(src, dst)
+
+def ln(target, name):
+   os.symlink(target, name)
 
 #say you have app/src/main.py. To get path of project directory (app) from main.py
 #you can use get_relative_path(__file__, '..')
