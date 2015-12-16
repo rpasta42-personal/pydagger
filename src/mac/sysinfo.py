@@ -47,12 +47,7 @@ def becomeAdmin(exec_path, debug=False):
       if debug:
          print(applescript)
 
-      p = Popen(["osascript", "-e", applescript], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-      if debug:
-         for line in p.stdout:
-            sys.stdout.write(line.decode('utf8'))
-         p.wait()
-
+      p = Popen(["osascript", "-e", applescript], stdin=None, stdout=None, stderr=None)
       return True
    return False
 
