@@ -154,6 +154,9 @@ def exec_prog_with_env(command, envBindings):
 
    Process(target=subProc).start()
 
+def get_random(length=15):
+    return shellutils.read_file('/dev/urandom', length, binary=True)
+
 #blocking, returns output
 def exec_get_stdout(command):
    args = command.split()
