@@ -41,14 +41,25 @@ def cp(src, dst):
 def ln(target, name):
    os.symlink(target, name)
 
-#say you have app/src/main.py. To get path of project directory (app) from main.py
-#you can use get_relative_path(__file__, '..')
+
+##PATH STUFF
+def pwd():
+   return os.getcwd()
+
+#dirname(f) gets directory of f
+#realpath(path) removes symbolic links
+#normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
+#abspath(path) same as normpath but also prepends pwd()
+
+#say you have app/src/main.py. To get path of project directory (app)
+#from main.py you can use get_relative_path(__file__, '..')
 def get_abs_path_relative_to(current_file, relative_path = ''):
-   from os.path import abspath, dirname, realpath
-   return abspath(dirname(realpath(current_file)) + relative_path)
+   from os.path import abspath, dirname, realpath, join
+   return abspath(join(dirname(realpath(current_file)), relative_path))
+##END OF RANDOM PATH STUFF
 
 def file_exists(filePath):
-   return filePath and os.path.exists(filePath)
+   return (filePath is not None) and os.path.exists(filePath)
 
 def check_paths(*paths):
    bad = []
