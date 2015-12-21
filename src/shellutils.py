@@ -30,7 +30,8 @@ def rm(path):
    elif is_file(path) or is_link(path):
       os.remove(path)
    else:
-      raise Exception('Trying to remove unknown file type')
+      if file_exists(path):
+         raise Exception('Trying to remove unknown file type')
 
 def cp(src, dst):
    if is_dir(src):
