@@ -22,12 +22,11 @@ class ExtractApp(Tk):
    app.start()
    """
    def __init__(self, on_start, on_check, on_complete, title="Extracting..."):
-      super(UI, self).__init__()
+      super(ExtractApp, self).__init__()
       self.master = self
       self.title(title)
       self.minsize(300, 80)
       self.extractor = None
-      self.archive_path = archive_path
       self.on_start = on_start
       self.on_check = on_check
       self.on_complete = on_complete
@@ -51,17 +50,19 @@ class ExtractApp(Tk):
 
    def on_closing(self):
       self.master.widthdraw()
-      self.master.destroy()
       self.quit()
+      self.destroy()
+      sys.exit()
 
    def check(self):
-      if self.on_check and self.on_check():
-         self.master.withdraw()
+      if self.on_check():
+         self.withdraw()
          if self.on_complete:
             self.on_complete()
-         self.master.destroy()
          self.quit()
+         self.destroy()
+         sys.exit()
       else:
-         self.after(100, check)
+         self.after(100, self.check)
 
 
