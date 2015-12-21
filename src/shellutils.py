@@ -53,9 +53,11 @@ def pwd():
 
 #say you have app/src/main.py. To get path of project directory (app)
 #from main.py you can use get_relative_path(__file__, '..')
-def get_abs_path_relative_to(current_file, relative_path = ''):
+def get_abs_path_relative_to(current_file, *relative_path):
    from os.path import abspath, dirname, realpath, join
-   return abspath(join(dirname(realpath(current_file)), relative_path))
+   if relative_path is None:
+      relative_path = ['']
+   return abspath(join(dirname(realpath(current_file)), *relative_path))
 ##END OF RANDOM PATH STUFF
 
 def file_exists(filePath):
@@ -108,7 +110,6 @@ def get_file_size(filename):
    finally:
       os.close(fd)
    return -1
-
 
 def parse_mtab():
    mounts = []
