@@ -1,5 +1,6 @@
-import os, os.path
-import shutil, signal, subprocess, json, sys, pwd, getpass
+import os, os.path, importlib
+import shutil, signal, subprocess, json, sys
+import pwd, getpass, grp
 from multiprocessing import Process
 
 def mkdir(name):
@@ -172,29 +173,67 @@ def get_random(length=15):
     return shellutils.read_file('/dev/urandom', length, binary=True)
 
 
-#import pwd, os, getpass kk
+#import pwd, os, getpass, grp
+#TODO: get user groups
+
 def get_current_user_id():
    return os.getuid()
 
 def get_current_user_name():
    return getpass.getuser()
 
-def get_user_info(usrname):
-   return pwd.getpwnam(usrname)
-def get_user_id(usrname):
-   return get_user_info(usrname)[2]
-def get_user_group_id(usrname):
-   return get_user_info(usrname)[3]
-def get_user_home_dir(usrname):
-   return get_user_info(usrname)[5]
-def get_user_shell(usrname):
-   return get_user_info(usrname)[6]
+def get_user_info(usrname=None, usrid=None):
+   info = None
+   if usrname is not None and usrid is not None:
+      msg = "Calling get_user_info with usrid and usrname but only 1 allowed"
+      raise Exception(msg)
+   if usrname is not None:
+      info = pwd.getpwnam(usrname)
+   elif usrid is not None:
+      info = pwd.getpwuid(usrid)
+   else:
+      info = pwd.getpwuid(get_current_user_id())
+   return info
 
-#user id [2]
-#group id [3]
-#shell [6]
+def get_user_id(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[2]
+def get_user_group_id(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[3]
+def get_user_home_dir(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[5]
+def get_user_shell(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[6]
+
+#unix user groups
+def get_group_db():
+   return grp.getgrall()
+
+def get_group_by_name(name, grpdb=None):
+   if grpdb is None:
+      grpdb = get_group_db()
+   for group in grpdb:
+      if group.gr_name == name:
+         return group
+   return None
+
+def get_group_members(grpname, group_data=None):
+   if group_data is None:
+      group_data = get_group_by_name(grpname)
+   return group_data.gr_mem
+
+#def get_user_groups(usrname, grpdb=None):
+#   if grpdb is None:
+#      grpdb =
+
+#get password database
+def get_password_db():
+   return pwd.getpwall()
 
 #end pwd
+
+def reload_module(module):
+   """from pycloak import shellutils. shellutils.reload_module(shellutils)"""
+   importlib.reload(module)
 
 #blocking, returns output
 def exec_get_stdout(command):
