@@ -170,7 +170,7 @@ def exec_prog_with_env(command, envBindings):
    Process(target=subProc).start()
 
 def get_random(length=15):
-    return shellutils.read_file('/dev/urandom', length, binary=True)
+    return read_file('/dev/urandom', length, binary=True)
 
 
 #import pwd, os, getpass, grp
