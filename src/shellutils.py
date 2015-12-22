@@ -175,8 +175,18 @@ def get_random(length=15):
     return read_file('/dev/urandom', length, binary=True)
 
 
-#import pwd, os, getpass, grp
-#TODO: get user groups
+##group and passwd stuff
+#TODO: add stuff for making groups, adduser,
+#useradd, add user to groups, etc.
+
+def chmod():
+   pass
+   #TODO: http://www.tutorialspoint.com/python/os_chmod.htm
+   #http://stackoverflow.com/questions/12791997/how-do-you-do-a-simple-chmod-x-from-within-python
+   #https://docs.python.org/2/library/stat.html#stat.S_ISUID
+
+def chown(path, uid, gid):
+   os.chown(path, uid, gid)
 
 def get_current_user_id():
    return os.getuid()
@@ -228,7 +238,7 @@ def get_name_from_group_data(groupdata):
 def get_group_members(groupname=None, groupdata=None):
    """Returns list of user names in the given group name or group_data that was obtained from get_group_by_name()."""
    if groupdata is None:
-      groupdata = get_group_by_name(grpname)
+      groupdata = get_group_by_name(groupname)
    return groupdata.gr_mem
 
 
@@ -242,13 +252,12 @@ def get_user_groups(usrname, grpdb=None):
       members = get_group_members(groupdata=group)
       for grp_mem in members:
          if grp_mem == usrname:
-            ret.append(get_name_from_group_info(grp_mem))
+            ret.append(get_name_from_group_data(group))
    return ret
 
 #get password database
 def get_password_db():
    return pwd.getpwall()
-
 #end pwd
 
 def reload_module(module):
