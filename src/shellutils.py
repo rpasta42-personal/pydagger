@@ -1,6 +1,8 @@
 import os, os.path, importlib
 import shutil, signal, subprocess, json, sys
-import pwd, getpass, grp
+import platform
+if platform.system() == 'Linux':
+   import pwd, getpass, grp
 from multiprocessing import Process
 
 def mkdir(name):
@@ -209,6 +211,7 @@ def get_group_db():
    return grp.getgrall()
 
 def get_group_by_name(name, grpdb=None):
+   """Given name of group, return it's internal structure."""
    if grpdb is None:
       grpdb = get_group_db()
    for group in grpdb:
@@ -216,14 +219,31 @@ def get_group_by_name(name, grpdb=None):
          return group
    return None
 
-def get_group_members(grpname, group_data=None):
-   if group_data is None:
-      group_data = get_group_by_name(grpname)
-   return group_data.gr_mem
+def get_name_from_group_data(groupdata):
+   """Given internal groupdata, get group's name."""
+   return groupdata.gr_name
 
-#def get_user_groups(usrname, grpdb=None):
-#   if grpdb is None:
-#      grpdb =
+#TODO: check if both are none
+#TODO: check if get_group_by_name returns None
+def get_group_members(groupname=None, groupdata=None):
+   """Returns list of user names in the given group name or group_data that was obtained from get_group_by_name()."""
+   if groupdata is None:
+      groupdata = get_group_by_name(grpname)
+   return groupdata.gr_mem
+
+
+def get_user_groups(usrname, grpdb=None):
+   """Returns list of group names that the user is member of."""
+   ret = []
+
+   if grpdb is None:
+      grpdb = get_group_db()
+   for group in grpdb:
+      members = get_group_members(groupdata=group)
+      for grp_mem in members:
+         if grp_mem == usrname:
+            ret.append(get_name_from_group_info(grp_mem))
+   return ret
 
 #get password database
 def get_password_db():
