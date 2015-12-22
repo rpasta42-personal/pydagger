@@ -46,13 +46,13 @@ GOTO :error_case
 
 :lazy_install
 	echo INSTALLING LAZILLY ON VIRTENV FOR UPDATER BUILDER. DELETE ME LATER
-	workon icloak-updater
-	make
-	make install
-	workon icloak-updater-starter
-	make
-	make install
-	deactivate
+	call workon icloak-updater
+	call make
+	call make install
+	call workon icloak-updater-starter
+	call make
+	call make install
+	call deactivate
 	GOTO end_case
 
 :error_case
