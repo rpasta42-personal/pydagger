@@ -1,4 +1,5 @@
-import shutil, os.path, signal, os, subprocess, json, sys
+import os, os.path
+import shutil, signal, subprocess, json, sys, pwd, getpass
 from multiprocessing import Process
 
 def mkdir(name):
@@ -44,13 +45,13 @@ def ln(target, name):
 
 
 ##PATH STUFF
-def pwd():
+def cwd():
    return os.getcwd()
 
 #dirname(f) gets directory of f
 #realpath(path) removes symbolic links
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
-#abspath(path) same as normpath but also prepends pwd()
+#abspath(path) same as normpath but also prepends cwd()
 
 #say you have app/src/main.py. To get path of project directory (app)
 #from main.py you can use get_relative_path(__file__, '..')
@@ -169,6 +170,31 @@ def exec_prog_with_env(command, envBindings):
 
 def get_random(length=15):
     return shellutils.read_file('/dev/urandom', length, binary=True)
+
+
+#import pwd, os, getpass kk
+def get_current_user_id():
+   return os.getuid()
+
+def get_current_user_name():
+   return getpass.getuser()
+
+def get_user_info(usrname):
+   return pwd.getpwnam(usrname)
+def get_user_id(usrname):
+   return get_user_info(usrname)[2]
+def get_user_group_id(usrname):
+   return get_user_info(usrname)[3]
+def get_user_home_dir(usrname):
+   return get_user_info(usrname)[5]
+def get_user_shell(usrname):
+   return get_user_info(usrname)[6]
+
+#user id [2]
+#group id [3]
+#shell [6]
+
+#end pwd
 
 #blocking, returns output
 def exec_get_stdout(command):
