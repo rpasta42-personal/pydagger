@@ -167,8 +167,15 @@ def exec_prog_with_env(command, envBindings):
 
    Process(target=subProc).start()
 
-def get_random(length=15):
+def get_random_byte_str(length=15):
     return read_file('/dev/urandom', length, binary=True)
+
+def get_random():
+   rand_str = get_random_byte_str()
+   total = 0
+   for x in rand_str:
+      total += x
+   return total
 
 #blocking, returns output
 def exec_get_stdout(command):
