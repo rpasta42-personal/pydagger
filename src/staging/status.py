@@ -1,4 +1,5 @@
-import logging
+import logging, traceback
+#import sys
 logger = logging.getLogger(__name__)
 
 def _stat(s):
@@ -17,21 +18,30 @@ _stat('NOUPDATEFILE')
 _stat('UNEXPECTEDSYS')
 #we don't support this os
 _stat('UNSUPPORTEDOS')
+#called stuff without initializing or did things in wrong order
+_stat('BADAPICALL')
 #unknown status
 _stat('UNKNOWN')
 #download exception
 _stat('DOWNLOAD')
+#random stuff that doesn't go anywhere else
+_stat('OTHER')
 
 class Status(Exception):
    def __init__(self, status, msg = ''):
       assert status == eval(status)
       self._msg = msg
       self.status = status
-      #logger.critical(self)
+      logger.critical(self.__str__())
+      #f = open('tmp/updater1', 'rw')
+      #traceback.print_exc(file=sys.stderr) #sys.stdout)
+      #f.close()
+      #store in variable = traceback.format_exc()
 
    def __str__(self):
       s = (self.status, repr(self._msg))
-      return 'KKStatus: %s: %s' % s
+      trace = traceback.format_exception(type(self), self, self.__traceback__)
+      return 'Status: %s: %s... \n%s' % (self.status, repr(self._msg),trace)
 
 #class MyLogger:
 #   #output='file', output='terminal', output='jsconsole'

@@ -3,12 +3,11 @@ import sys
 sys.path.insert(0, __file__ + '/..')
 import status
 from status import Status
-
-import logging, os, requests, xxhash, shutil
+import logging, os, requests, xxhash
 from downloader.misc import json_from_url
-from pycloak.misc import read_conf, write_conf
-from pycloak.shellutils import file_exists, exec_prog
 from pycloak.threadutils import ThreadQueue
+from pycloak import shellutils
+from pycloak.shellutils import file_exists, exec_prog
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ def get_conf(url, download_dir, useThreads):
       os.mkdir(download_dir)
 
    conf_new = json_from_url(url)
-   conf = read_conf(json_path)
+   conf = shellutils.read_json(json_path)
    if conf is None:
       logger.info('No local download.json file found. Downloading download.json from server.')
       conf = conf_new
@@ -82,7 +81,7 @@ def write_block_(data, hashes, final_file, offset, conf, progress, conf_path):
    final_file.write(data)
    #final_file.flush()
    conf['progress'] = progress+1
-   write_conf(conf_path, conf)
+   shellutils.write_json(conf_path, conf)
 
 #single file version
 def download(json_url, download_dir, onProgress, useThreads=False): #onComplete?
@@ -93,13 +92,13 @@ def download(json_url, download_dir, onProgress, useThreads=False): #onComplete?
       write_block = lambda *args: threadQueue.add_task(write_block_, *args)
 
    if not resuming:
-      write_conf(json_path, conf)
+      shellutils.write_json(json_path, conf)
       hashes = json_from_url(json_url + '.hashes')
-      write_conf(hashes_path, hashes)
+      shellutils.write_json(hashes_path, hashes)
       if file_exists(raw_path):
-         shutil.rmtree(raw_path)
+         shellutils.rm(raw_path)
    else:
-      hashes = read_conf(hashes_path)
+      hashes = shellutils.read_json(hashes_path)
 
    progress = conf['progress']
    num_hashes = conf['num-hashes']

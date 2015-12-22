@@ -2,4 +2,7 @@ Ideas:
    is_icloak from app.py
    path of current executable file
 
+for tk progress bar
+   sudo apt-get install python3-tk
+
 pip install -r misc/freeze.txt

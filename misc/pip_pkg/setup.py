@@ -22,7 +22,7 @@ setup (
    author="Kostyantyn Kovalskyy",
    author_email="konstantin@icloak.org",
    #packages=["pycloak", "pycloak.test"],
-   packages=["pycloak", "pycloak.IPC", "pycloak.mac", "pycloak.win", "pycloak.linux"],
+   packages=["pycloak", "pycloak.IPC", "pycloak.mac", "pycloak.win", "pycloak.linux", "pycloak.tkutils"],
    package_dir={"pycloak": "../../src"},
    url='http://pypi.python.org/pypi/PYCLOAK/',
    #license='LICENSE.txt',

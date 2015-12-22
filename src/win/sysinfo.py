@@ -3,12 +3,6 @@ import os
 import traceback
 import types
 import ctypes
-import win32api
-import win32con
-import win32event
-import win32process
-from win32com.shell.shell import ShellExecuteEx
-from win32com.shell import shellcon
 
 def isUserAdmin():
    try:
@@ -25,24 +19,14 @@ def becomeAdmin(exec_path, debug=False, wait=False, show_shell=True):
       cmd = '"%s"' % path
       params = " ".join(['"%s"' % (x,) for x in args])
       cmdDir = ''
+
+
       if show_shell:
-         showCmd = win32con.SW_SHOWNORMAL
+         showCmd = 1
       else:
-         showCmd = win32con.SW_HIDE
+         showCmd = 0
 
-      procInfo = ShellExecuteEx(
-         nShow=showCmd,
-         fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
-         lpVerb='runas',
-         lpFile=cmd,
-         lpParameters=params)
-
-      if wait:
-         procHandle = procInfo['hProcess']
-         obj = win32event.WaitForSingleObject(procHandle, win32event.INFINITE)
-         rc = win32process.GetExitCodeProcess(procHandle)
-      else:
-         rc = None
+      ctypes.windll.shell32.ShellExecuteW(None, 'runas', cmd,  params, None, showCmd)
 
       return True
    return False
