@@ -174,13 +174,17 @@ def exec_prog_with_env(command, envBindings):
 def get_random_byte_str(length=15):
     return read_file('/dev/urandom', length, binary=True)
 
-def get_random():
-   rand_len = get_random_byte_str(1)[0]
+def get_random(max_num=None):
+   rand_len = get_random_byte_str(1)[0] % 10 + 1
    rand_str = get_random_byte_str(rand_len)
    total = 0
+   i = 1
    for x in rand_str:
-      total += x
-   return total
+      total += x * i
+      i*= 10
+   if max_num is None:
+      return total
+   return total % (max_num + 1)
 
 #import pwd, os, getpass, grp
 #TODO: get user groups
