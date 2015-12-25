@@ -178,6 +178,10 @@ class Benchmark(object):
       self.start = self.end = self.interval = None
       self.result_callback = result_callback
 
+   def elapsed(self):
+      self.interval = self.end - self.start
+      return self.interval
+
    def __enter__(self):
       if self.disable_gc:
          self.gc_state = gc.isenabled()

@@ -1,4 +1,8 @@
-import shutil, os.path, signal, os, subprocess, json, sys
+import os, os.path, importlib
+import shutil, signal, subprocess, json, sys
+import platform
+if platform.system() == 'Linux':
+   import pwd, getpass, grp
 from multiprocessing import Process
 
 def mkdir(name):
@@ -44,13 +48,13 @@ def ln(target, name):
 
 
 ##PATH STUFF
-def pwd():
+def cwd():
    return os.getcwd()
 
 #dirname(f) gets directory of f
 #realpath(path) removes symbolic links
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
-#abspath(path) same as normpath but also prepends pwd()
+#abspath(path) same as normpath but also prepends cwd()
 
 #say you have app/src/main.py. To get path of project directory (app)
 #from main.py you can use get_relative_path(__file__, '..')
@@ -171,11 +175,92 @@ def get_random_byte_str(length=15):
     return read_file('/dev/urandom', length, binary=True)
 
 def get_random():
-   rand_str = get_random_byte_str()
+   rand_len = get_random_byte_str(1)[0]
+   rand_str = get_random_byte_str(rand_len)
    total = 0
    for x in rand_str:
       total += x
    return total
+
+#import pwd, os, getpass, grp
+#TODO: get user groups
+
+def get_current_user_id():
+   return os.getuid()
+
+def get_current_user_name():
+   return getpass.getuser()
+
+def get_user_info(usrname=None, usrid=None):
+   info = None
+   if usrname is not None and usrid is not None:
+      msg = "Calling get_user_info with usrid and usrname but only 1 allowed"
+      raise Exception(msg)
+   if usrname is not None:
+      info = pwd.getpwnam(usrname)
+   elif usrid is not None:
+      info = pwd.getpwuid(usrid)
+   else:
+      info = pwd.getpwuid(get_current_user_id())
+   return info
+
+def get_user_id(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[2]
+def get_user_group_id(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[3]
+def get_user_home_dir(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[5]
+def get_user_shell(usrname=None, usrid=None):
+   return get_user_info(usrname, usrid)[6]
+
+#unix user groups
+def get_group_db():
+   return grp.getgrall()
+
+def get_group_by_name(name, grpdb=None):
+   """Given name of group, return it's internal structure."""
+   if grpdb is None:
+      grpdb = get_group_db()
+   for group in grpdb:
+      if group.gr_name == name:
+         return group
+   return None
+
+def get_name_from_group_data(groupdata):
+   """Given internal groupdata, get group's name."""
+   return groupdata.gr_name
+
+#TODO: check if both are none
+#TODO: check if get_group_by_name returns None
+def get_group_members(groupname=None, groupdata=None):
+   """Returns list of user names in the given group name or group_data that was obtained from get_group_by_name()."""
+   if groupdata is None:
+      groupdata = get_group_by_name(grpname)
+   return groupdata.gr_mem
+
+
+def get_user_groups(usrname, grpdb=None):
+   """Returns list of group names that the user is member of."""
+   ret = []
+
+   if grpdb is None:
+      grpdb = get_group_db()
+   for group in grpdb:
+      members = get_group_members(groupdata=group)
+      for grp_mem in members:
+         if grp_mem == usrname:
+            ret.append(get_name_from_group_info(grp_mem))
+   return ret
+
+#get password database
+def get_password_db():
+   return pwd.getpwall()
+
+#end pwd
+
+def reload_module(module):
+   """from pycloak import shellutils. shellutils.reload_module(shellutils)"""
+   importlib.reload(module)
 
 #blocking, returns output
 def exec_get_stdout(command):

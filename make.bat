@@ -44,6 +44,17 @@ GOTO :error_case
 	pip install --upgrade misc/pip_pkg/dist/PYCLOAK-%version%-py3-none-any.whl
 	GOTO end_case
 
+:lazy_install
+	echo INSTALLING LAZILLY ON VIRTENV FOR UPDATER BUILDER. DELETE ME LATER
+	call workon icloak-updater
+	call make
+	call make install
+	call workon icloak-updater-starter
+	call make
+	call make install
+	call deactivate
+	GOTO end_case
+
 :error_case
 	ECHO Invalid Option "%1"
 	GOTO end_case
