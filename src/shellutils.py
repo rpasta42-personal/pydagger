@@ -5,6 +5,28 @@ if platform.system() == 'Linux':
    import pwd, getpass, grp
 from multiprocessing import Process
 
+def expanduser(path):
+   return os.path.expanduser(path)
+
+#wrapper for only first argument path
+def expandhome1(func):
+   def wrapper(path, *args, **kwargs):
+      return func(expanduser(path), *args, **kwargs)
+   return wrapper
+
+#wrapper for every argument
+def expandhome(func):
+   def wrapper(*args, **kwargs):
+      new_args = []
+      for arg in args:
+         new_args.append(expanduser(arg))
+      new_kwargs = {}
+      for key in kwargs:
+         new_arg[key] = expanduser(kwargs[key])
+      return func(*new_args, **new_kwargs)
+   return wrapper
+
+@expandhome
 def mkdir(name):
    """recursively create dirs (like mkdir -p)"""
    #os.mkdir(name) #make one directory
@@ -14,24 +36,44 @@ def mkdir(name):
 def join(*args):
    return os.path.join(*args)
 
+@expandhome
 def ls(path):
    return os.listdir(path)
 
+#http://stackoverflow.com/a/13197763
+@expandhome
 def cd(path):
    os.chdir(path)
 
+class cd_:
+    """Context manager for changing the current working directory"""
+    def __init__(self, newPath):
+        self.newPath = os.path.expanduser(newPath)
+
+    def __enter__(self):
+        self.savedPath = os.getcwd()
+        os.chdir(self.newPath)
+
+    def __exit__(self, etype, value, traceback):
+        os.chdir(self.savedPath)
+
+@expandhome
 def is_file(path):
    return os.path.isfile(path)
 
+@expandhome
 def is_dir(path):
    return os.path.isdir(path)
 
+@expandhome
 def is_link(path):
    return os.path.islink(path)
 
+@expandhome
 def is_mount_point(path):
    return os.path.ismount(path)
 
+@expandhome
 def rm(path):
    """Removes files and directories"""
    if is_dir(path):
@@ -43,12 +85,14 @@ def rm(path):
       if file_exists(path):
          raise Exception('Trying to remove unknown file type')
 
+@expandhome
 def cp(src, dst):
    if is_dir(src):
       shutil.copytree(src, dst)
    elif is_file(src):
       shutil.copy(src, dst)
 
+@expandhome
 def ln(target, name):
    os.symlink(target, name)
 
@@ -57,6 +101,8 @@ def ln(target, name):
 def cwd():
    return os.getcwd()
 
+#os.path
+#expanduser() = fixes ~
 #dirname(f) gets directory of f
 #realpath(path) removes symbolic links and prepands cwd()
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
@@ -64,6 +110,7 @@ def cwd():
 
 #say you have app/src/main.py. To get path of project directory (app)
 #from main.py you can use get_relative_path(__file__, '..')
+@expandhome
 def get_abs_path_relative_to(current_file, *relative_path):
    from os.path import abspath, dirname, realpath, join
    if relative_path is None:
@@ -71,9 +118,11 @@ def get_abs_path_relative_to(current_file, *relative_path):
    return abspath(join(dirname(realpath(current_file)), *relative_path))
 ##END OF RANDOM PATH STUFF
 
+@expandhome
 def file_exists(filePath):
    return (filePath is not None) and os.path.exists(filePath)
 
+@expandhome
 def check_paths(*paths):
    bad = []
    for p in paths:
@@ -81,6 +130,7 @@ def check_paths(*paths):
          bad.append(p)
    return bad
 
+@expandhome1
 def write_file(filePath, data, binary=False):
    flags = 'w'
    if binary:
@@ -88,6 +138,7 @@ def write_file(filePath, data, binary=False):
    with open(filePath, flags) as f:
       return f.write(data)
 
+@expandhome1
 def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
    if file_exists(filePath):
       flags = 'r'
@@ -103,9 +154,11 @@ def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
       file(filePath, 'w').close()
    return None
 
+@expandhome1
 def write_json(path, json_data):
    write_file(path, json.dumps(json_data) + '\n')
 
+@expandhome1
 def read_json(path):
    if path:
       data = read_file(path)
@@ -113,6 +166,7 @@ def read_json(path):
          return json.loads(data)
    return None
 
+@expandhome1
 def get_file_size(filename):
    "Get the file size by seeking end"
    fd = os.open(filename, os.O_RDONLY)
@@ -184,6 +238,7 @@ def exec_get_stdout(command):
    return task.communicate()
 
 #pip install sh
+#http://plumbum.readthedocs.org/en/latest/index.html
 def exec_bash(command):
    os.system(command)
 
@@ -286,9 +341,11 @@ def reload_module(module):
    """from pycloak import shellutils. shellutils.reload_module(shellutils)"""
    importlib.reload(module)
 
-def recompile_icloak(m=None, pycloak_path='/home/kkostya/work/pycloak'):
+def recompile_pycloak(m=None, pycloak_path='~/work/pycloak'):
    import sh
    current_path = cwd()
+
+   pycloak_path = expanduser(pycloak_path)
    cd(pycloak_path)
    sh.make()
    sh.make('install')
