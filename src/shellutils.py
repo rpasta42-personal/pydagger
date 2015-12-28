@@ -366,7 +366,7 @@ def recompile_pycloak(m=None, pycloak_path='~/work/pycloak'):
    if m is not None:
       reload_module(m)
 
-def get_tmp_folder(prefix='tmp', suffix=None):
+def tmp_folder(prefix='tmp', suffix=''):
    return tempfile.mkdtemp(suffix, prefix)
 
 class ProgressBar(object):
