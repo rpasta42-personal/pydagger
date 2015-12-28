@@ -11,8 +11,14 @@ def mkdir(name):
    #exists_ok prevents errors when dir already exists
    os.makedirs(name, exist_ok=True)
 
+def join(*args):
+   return os.path.join(*args)
+
 def ls(path):
    return os.listdir(path)
+
+def cd(path):
+   os.chdir(path)
 
 def is_file(path):
    return os.path.isfile(path)
@@ -52,7 +58,7 @@ def cwd():
    return os.getcwd()
 
 #dirname(f) gets directory of f
-#realpath(path) removes symbolic links
+#realpath(path) removes symbolic links and prepands cwd()
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
 #abspath(path) same as normpath but also prepends cwd()
 
@@ -171,6 +177,16 @@ def exec_prog_with_env(command, envBindings):
 
    Process(target=subProc).start()
 
+#blocking, returns output
+def exec_get_stdout(command):
+   args = command.split()
+   task = subprocess.Popen(args, stdout=subprocess.PIPE)
+   return task.communicate()
+
+#pip install sh
+def exec_bash(command):
+   os.system(command)
+
 def get_random(length=15):
     return read_file('/dev/urandom', length, binary=True)
 
@@ -241,7 +257,6 @@ def get_group_members(groupname=None, groupdata=None):
       groupdata = get_group_by_name(groupname)
    return groupdata.gr_mem
 
-
 def get_user_groups(usrname, grpdb=None):
    """Returns list of group names that the user is member of."""
    ret = []
@@ -260,15 +275,26 @@ def get_password_db():
    return pwd.getpwall()
 #end pwd
 
+def normalize_version(ver, length):
+   """Takes version as a list and how long it should be.
+      Appends 0's if it's not long enough."""
+   if len(ver) > length:
+      raise Exception('Version is longer than the longest length')
+   return ver + ([0] * (length - len(ver)))
+
 def reload_module(module):
    """from pycloak import shellutils. shellutils.reload_module(shellutils)"""
    importlib.reload(module)
 
-#blocking, returns output
-def exec_get_stdout(command):
-   args = command.split()
-   task = subprocess.Popen(args, stdout=subprocess.PIPE)
-   return task.communicate()
+def recompile_icloak(m=None, pycloak_path='/home/kkostya/work/pycloak'):
+   import sh
+   current_path = cwd()
+   cd(pycloak_path)
+   sh.make()
+   sh.make('install')
+   cd(current_path)
+   if m is not None:
+      reload_module(m)
 
 class ProgressBar(object):
     def __init__(self, max_width = 20):
