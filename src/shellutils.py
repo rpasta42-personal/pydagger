@@ -49,9 +49,11 @@ def cp(src, dst):
    elif is_file(src):
       shutil.copy(src, dst)
 
+def mv(src, dst):
+   shutil.move(src, dst)
+
 def ln(target, name):
    os.symlink(target, name)
-
 
 ##PATH STUFF
 def cwd():
@@ -275,7 +277,7 @@ def get_password_db():
    return pwd.getpwall()
 #end pwd
 
-def normalize_version(ver, length):
+def normalize_version(ver, length=5):
    """Takes version as a list and how long it should be.
       Appends 0's if it's not long enough."""
    if len(ver) > length:
