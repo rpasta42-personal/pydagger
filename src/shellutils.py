@@ -1,6 +1,6 @@
-import os, os.path, importlib
-import shutil, signal, subprocess, json, sys
-import platform
+import os, os.path, importlib, json, sys, tempfile
+import shutil, signal, subprocess, platform
+
 if platform.system() == 'Linux':
    import pwd, getpass, grp
 from multiprocessing import Process
@@ -297,6 +297,9 @@ def recompile_icloak(m=None, pycloak_path='/home/kkostya/work/pycloak'):
    cd(current_path)
    if m is not None:
       reload_module(m)
+
+def get_tmp_folder(prefix='tmp', suffix=None):
+   return tempfile.mkdtemp(suffix, prefix)
 
 class ProgressBar(object):
     def __init__(self, max_width = 20):
