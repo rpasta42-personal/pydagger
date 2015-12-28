@@ -9,6 +9,7 @@ from pycloak.threadutils import ThreadQueue
 from pycloak import shellutils
 from pycloak.shellutils import file_exists, exec_prog
 
+cacert = True #os.path.join(os.path.abspath(os.path.dirname(sys.executable)), 'cacert.pem')
 logger = logging.getLogger(__name__)
 
 def get_conf(url, download_dir, useThreads):
@@ -116,7 +117,7 @@ def download(json_url, download_dir, onProgress, useThreads=False): #onComplete?
 
       header = { 'Range': 'bytes=%d-%d' % (offset, end) }
       #Stream=False makes it faster
-      r = requests.get(raw_url, headers=header, stream=False, verify=True, allow_redirects=True)
+      r = requests.get(raw_url, headers=header, stream=False, verify=cacert, allow_redirects=True)
 
       if r.status_code != 206:
          msg = 'Wrong code for getting chunk. Got %i' % r.status_code

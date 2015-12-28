@@ -8,7 +8,7 @@ def parse_args():
    parser.add_argument('-s', '--chunk-size', dest='size', help='Specify chunk size in kilobytes (default 1024 or 1 MB)')
    parser.add_argument('-o', '--out-json', dest='output', help='where to store update info (default is "<FILE>.update_info")')
    parser.add_argument('-c', '--compress-type', dest='compress', help='compress=0 (none), compress=1 (whole image) and compress=2 (chunk)')
-   parser.add_argument('-e', '--extra-json', dest='extras_path', help='Add extra json read from extra json file')
+   #parser.add_argument('-e', '--extra-json', dest='extras_path', help='Add extra json read from extra json file')
    #parser.add_argument('-d', '--data-dir', dest='data_dir', help='which directory to store update data and hashes in')
    parser.add_argument('update_file', metavar='raw-update', help='Raw update file from which we generate update')
    parser.add_argument('version', metavar='version', help='icloak version')
@@ -22,7 +22,7 @@ version = args.version #timestamps instead?. -1 means always update
 info_path = args.output
 raw_path = args.update_file
 compress = args.compress
-extra_json_path = args.extras_path
+#extra_json_path = args.extras_path
 
 if block_size is None:
    block_size = 1024
@@ -38,11 +38,11 @@ if compress is not None:
 if compress is None or compress < 0 or compress > 2:
    compress = 0
 
-if extra_json_path == None:
-   extra_json = None
-else:
-   extra_json = misc.read_conf(extra_json_path)
-   print('Got extra json')
+#if extra_json_path == None:
+#   extra_json = None
+#else:
+#   extra_json = misc.read_conf(extra_json_path)
+#   print('Got extra json')
 
 print('Compression option = %r' % compress)
 print('Chunk size = %r' % block_size)
@@ -112,9 +112,8 @@ json_conf = {
    'progress'     : 0,
    'num-hashes'   : num_hashes,
    #'raw-hash'     : big_hash, #TODO: need this for unit tests but actual image is too big to digest
-   'extra-json'   : extra_json
+   #'extra-json'   : extra_json
 }
 
 misc.write_conf(info_path, json_conf)
-
 
