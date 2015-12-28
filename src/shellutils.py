@@ -5,27 +5,6 @@ if platform.system() == 'Linux':
    import pwd, getpass, grp
 from multiprocessing import Process
 
-def expanduser(path):
-   return os.path.expanduser(path)
-
-#wrapper for only first argument path
-def expandhome1(func):
-   def wrapper(path, *args, **kwargs):
-      return func(expanduser(path), *args, **kwargs)
-   return wrapper
-
-#wrapper for every argument
-def expandhome(func):
-   def wrapper(*args, **kwargs):
-      new_args = []
-      for arg in args:
-         new_args.append(expanduser(arg))
-      new_kwargs = {}
-      for key in kwargs:
-         new_arg[key] = expanduser(kwargs[key])
-      return func(*new_args, **new_kwargs)
-   return wrapper
-
 @expandhome
 def mkdir(name):
    """recursively create dirs (like mkdir -p)"""
@@ -33,29 +12,9 @@ def mkdir(name):
    #exists_ok prevents errors when dir already exists
    os.makedirs(name, exist_ok=True)
 
-def join(*args):
-   return os.path.join(*args)
-
 @expandhome
 def ls(path):
    return os.listdir(path)
-
-#http://stackoverflow.com/a/13197763
-@expandhome
-def cd(path):
-   os.chdir(path)
-
-class cd_:
-    """Context manager for changing the current working directory"""
-    def __init__(self, newPath):
-        self.newPath = os.path.expanduser(newPath)
-
-    def __enter__(self):
-        self.savedPath = os.getcwd()
-        os.chdir(self.newPath)
-
-    def __exit__(self, etype, value, traceback):
-        os.chdir(self.savedPath)
 
 @expandhome
 def is_file(path):
@@ -93,13 +52,57 @@ def cp(src, dst):
       shutil.copy(src, dst)
 
 @expandhome
+def mv(src, dst):
+   shutil.move(src, dst)
+
+@expandhome
 def ln(target, name):
    os.symlink(target, name)
 
+#http://stackoverflow.com/a/13197763
+@expandhome
+def cd(path):
+   os.chdir(path)
+
+class cd_:
+    """Context manager for changing the current working directory"""
+    def __init__(self, newPath):
+        self.newPath = os.path.expanduser(newPath)
+
+    def __enter__(self):
+        self.savedPath = os.getcwd()
+        os.chdir(self.newPath)
+
+    def __exit__(self, etype, value, traceback):
+        os.chdir(self.savedPath)
 
 ##PATH STUFF
 def cwd():
    return os.getcwd()
+
+def join(*args):
+   return os.path.join(*args)
+
+def expanduser(path):
+   return os.path.expanduser(path)
+
+#wrapper for only first argument path
+def expandhome1(func):
+   def wrapper(path, *args, **kwargs):
+      return func(expanduser(path), *args, **kwargs)
+   return wrapper
+
+#wrapper for every argument
+def expandhome(func):
+   def wrapper(*args, **kwargs):
+      new_args = []
+      for arg in args:
+         new_args.append(expanduser(arg))
+      new_kwargs = {}
+      for key in kwargs:
+         new_arg[key] = expanduser(kwargs[key])
+      return func(*new_args, **new_kwargs)
+   return wrapper
 
 #os.path
 #expanduser() = fixes ~
@@ -116,11 +119,6 @@ def get_abs_path_relative_to(current_file, *relative_path):
    if relative_path is None:
       relative_path = ['']
    return abspath(join(dirname(realpath(current_file)), *relative_path))
-##END OF RANDOM PATH STUFF
-
-@expandhome
-def file_exists(filePath):
-   return (filePath is not None) and os.path.exists(filePath)
 
 @expandhome
 def check_paths(*paths):
@@ -129,6 +127,11 @@ def check_paths(*paths):
       if file_exists(p) is False:
          bad.append(p)
    return bad
+##END OF RANDOM PATH STUFF
+
+@expandhome
+def file_exists(filePath):
+   return (filePath is not None) and os.path.exists(filePath)
 
 @expandhome1
 def write_file(filePath, data, binary=False):
@@ -329,6 +332,17 @@ def get_user_groups(usrname, grpdb=None):
 def get_password_db():
    return pwd.getpwall()
 #end pwd
+
+
+def ver_lst_to_str(ver):
+   s = ''
+   for x in ver:
+      s += '.%i' % x
+   return s[1:]
+
+def ver_str_to_lst(ver):
+   s = ver.split('.')
+   return list(map(int, s.split('.')))
 
 def normalize_version(ver, length=5):
    """Takes version as a list and how long it should be.

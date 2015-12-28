@@ -6,3 +6,17 @@ for tk progress bar
    sudo apt-get install python3-tk
 
 pip install -r misc/freeze.txt
+
+syslog
+https://docs.python.org/2/library/tarfile.html
+https://docs.python.org/3/library/zipfile.html
+
+python -m py_compile file_name.py
+   check syntax
+
+os.path.append()
+
+vim notes:
+   shift " + y
+   shift " + p
+   o = append new line vimg
