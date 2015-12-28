@@ -13,7 +13,7 @@ def mkdir(name):
    os.makedirs(name, exist_ok=True)
 
 @expandhome
-def ls(path):
+def ls(path='.'):
    return os.listdir(path)
 
 @expandhome
