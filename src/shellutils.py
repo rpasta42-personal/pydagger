@@ -1,6 +1,6 @@
-import os, os.path, importlib
-import shutil, signal, subprocess, json, sys
-import platform
+import os, os.path, importlib, json, sys, tempfile
+import shutil, signal, subprocess, platform
+
 if platform.system() == 'Linux':
    import pwd, getpass, grp
 from multiprocessing import Process
@@ -333,7 +333,6 @@ def get_password_db():
    return pwd.getpwall()
 #end pwd
 
-
 def ver_lst_to_str(ver):
    s = ''
    for x in ver:
@@ -344,7 +343,7 @@ def ver_str_to_lst(ver):
    s = ver.split('.')
    return list(map(int, s.split('.')))
 
-def normalize_version(ver, length=5):
+def normalize_version(ver, length=4):
    """Takes version as a list and how long it should be.
       Appends 0's if it's not long enough."""
    if len(ver) > length:
@@ -366,6 +365,9 @@ def recompile_pycloak(m=None, pycloak_path='~/work/pycloak'):
    cd(current_path)
    if m is not None:
       reload_module(m)
+
+def get_tmp_folder(prefix='tmp', suffix=None):
+   return tempfile.mkdtemp(suffix, prefix)
 
 class ProgressBar(object):
     def __init__(self, max_width = 20):
