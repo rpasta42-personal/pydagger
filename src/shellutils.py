@@ -1,6 +1,6 @@
-import os, os.path, importlib
-import shutil, signal, subprocess, json, sys
-import platform
+import os, os.path, importlib, json, sys, tempfile
+import shutil, signal, subprocess, platform
+
 if platform.system() == 'Linux':
    import pwd, getpass, grp
 from multiprocessing import Process
@@ -11,8 +11,14 @@ def mkdir(name):
    #exists_ok prevents errors when dir already exists
    os.makedirs(name, exist_ok=True)
 
+def join(*args):
+   return os.path.join(*args)
+
 def ls(path):
    return os.listdir(path)
+
+def cd(path):
+   os.chdir(path)
 
 def is_file(path):
    return os.path.isfile(path)
@@ -43,16 +49,18 @@ def cp(src, dst):
    elif is_file(src):
       shutil.copy(src, dst)
 
+def mv(src, dst):
+   shutil.move(src, dst)
+
 def ln(target, name):
    os.symlink(target, name)
-
 
 ##PATH STUFF
 def cwd():
    return os.getcwd()
 
 #dirname(f) gets directory of f
-#realpath(path) removes symbolic links
+#realpath(path) removes symbolic links and prepands cwd()
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
 #abspath(path) same as normpath but also prepends cwd()
 
@@ -171,8 +179,19 @@ def exec_prog_with_env(command, envBindings):
 
    Process(target=subProc).start()
 
-def get_random_byte_str(length=15):
-    return read_file('/dev/urandom', length, binary=True)
+
+#blocking, returns output
+def exec_get_stdout(command):
+   args = command.split()
+   task = subprocess.Popen(args, stdout=subprocess.PIPE)
+   return task.communicate()
+
+#pip install sh
+def exec_bash(command):
+   os.system(command)
+
+ def get_random_byte_str(length=15):
+   return read_file('/dev/urandom', length, binary=True)
 
 #TODO: maybe replace with python version
 def get_random(max_num=None):
@@ -187,8 +206,18 @@ def get_random(max_num=None):
       return total
    return total % (max_num + 1)
 
-#import pwd, os, getpass, grp
-#TODO: get user groups
+##group and passwd stuff
+#TODO: add stuff for making groups, adduser,
+#useradd, add user to groups, etc.
+
+def chmod():
+   pass
+   #TODO: http://www.tutorialspoint.com/python/os_chmod.htm
+   #http://stackoverflow.com/questions/12791997/how-do-you-do-a-simple-chmod-x-from-within-python
+   #https://docs.python.org/2/library/stat.html#stat.S_ISUID
+
+def chown(path, uid, gid):
+   os.chown(path, uid, gid)
 
 def get_current_user_id():
    return os.getuid()
@@ -240,9 +269,8 @@ def get_name_from_group_data(groupdata):
 def get_group_members(groupname=None, groupdata=None):
    """Returns list of user names in the given group name or group_data that was obtained from get_group_by_name()."""
    if groupdata is None:
-      groupdata = get_group_by_name(grpname)
+      groupdata = get_group_by_name(groupname)
    return groupdata.gr_mem
-
 
 def get_user_groups(usrname, grpdb=None):
    """Returns list of group names that the user is member of."""
@@ -254,24 +282,37 @@ def get_user_groups(usrname, grpdb=None):
       members = get_group_members(groupdata=group)
       for grp_mem in members:
          if grp_mem == usrname:
-            ret.append(get_name_from_group_info(grp_mem))
+            ret.append(get_name_from_group_data(group))
    return ret
 
 #get password database
 def get_password_db():
    return pwd.getpwall()
-
 #end pwd
+
+def normalize_version(ver, length=4):
+   """Takes version as a list and how long it should be.
+      Appends 0's if it's not long enough."""
+   if len(ver) > length:
+      raise Exception('Version is longer than the longest length')
+   return ver + ([0] * (length - len(ver)))
 
 def reload_module(module):
    """from pycloak import shellutils. shellutils.reload_module(shellutils)"""
    importlib.reload(module)
 
-#blocking, returns output
-def exec_get_stdout(command):
-   args = command.split()
-   task = subprocess.Popen(args, stdout=subprocess.PIPE)
-   return task.communicate()
+def recompile_icloak(m=None, pycloak_path='/home/kkostya/work/pycloak'):
+   import sh
+   current_path = cwd()
+   cd(pycloak_path)
+   sh.make()
+   sh.make('install')
+   cd(current_path)
+   if m is not None:
+      reload_module(m)
+
+def tmp_folder(prefix='tmp', suffix=''):
+   return tempfile.mkdtemp(suffix, prefix)
 
 class ProgressBar(object):
     def __init__(self, max_width = 20):
