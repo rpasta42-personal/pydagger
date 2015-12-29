@@ -5,6 +5,24 @@ if platform.system() == 'Linux':
    import pwd, getpass, grp
 from multiprocessing import Process
 
+#wrapper for only first argument path
+def expandhome1(func):
+   def wrapper(path, *args, **kwargs):
+      return func(expanduser(path), *args, **kwargs)
+   return wrapper
+
+#wrapper for every argument
+def expandhome(func):
+   def wrapper(*args, **kwargs):
+      new_args = []
+      for arg in args:
+         new_args.append(expanduser(arg))
+      new_kwargs = {}
+      for key in kwargs:
+         new_arg[key] = expanduser(kwargs[key])
+      return func(*new_args, **new_kwargs)
+   return wrapper
+
 @expandhome
 def mkdir(name):
    """recursively create dirs (like mkdir -p)"""
@@ -85,24 +103,6 @@ def join(*args):
 
 def expanduser(path):
    return os.path.expanduser(path)
-
-#wrapper for only first argument path
-def expandhome1(func):
-   def wrapper(path, *args, **kwargs):
-      return func(expanduser(path), *args, **kwargs)
-   return wrapper
-
-#wrapper for every argument
-def expandhome(func):
-   def wrapper(*args, **kwargs):
-      new_args = []
-      for arg in args:
-         new_args.append(expanduser(arg))
-      new_kwargs = {}
-      for key in kwargs:
-         new_arg[key] = expanduser(kwargs[key])
-      return func(*new_args, **new_kwargs)
-   return wrapper
 
 #os.path
 #expanduser() = fixes ~
