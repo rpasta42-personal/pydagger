@@ -174,6 +174,7 @@ def exec_prog_with_env(command, envBindings):
 def get_random_byte_str(length=15):
     return read_file('/dev/urandom', length, binary=True)
 
+#TODO: maybe replace with python version
 def get_random(max_num=None):
    rand_len = get_random_byte_str(1)[0] % 10 + 1
    rand_str = get_random_byte_str(rand_len)
