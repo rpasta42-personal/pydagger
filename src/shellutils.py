@@ -246,7 +246,7 @@ def exec_get_stdout(command):
 def exec_bash(command):
    os.system(command)
 
- def get_random_byte_str(length=15):
+def get_random_byte_str(length=15):
    return read_file('/dev/urandom', length, binary=True)
 
 #TODO: maybe replace with python version
