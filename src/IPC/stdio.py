@@ -123,8 +123,8 @@ module.exports = (function() {
     var EventEmitter = require('events').EventEmitter;
     var stdio = require("stdio");
 
-    var %(namespace)s = function(bin_path, args) {
-        this._transport = new stdio.stdioLib(bin_path, args);
+    var %(namespace)s = function(bin_path, args, options) {
+        this._transport = new stdio.stdioLib(bin_path, args, options);
         this._rpc = new stdio.jsonrpc(this._transport, "%(namespace)s");
         var base = this;
         this._rpc.on("connected", function() {
