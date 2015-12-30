@@ -13,7 +13,6 @@ def becomeAdmin(exec_path, debug=False):
       logger.info("=== Testing if user is root")
       os.setuid(0)
       logger.info(" == User is root")
-      return True
    except Exception as e:
       logger.info(" == User is NOT root")
       # on frozen app we should be able to get path from sys
