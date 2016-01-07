@@ -234,6 +234,7 @@ def exec_prog_with_env(command, envBindings):
 
    Process(target=subProc).start()
 
+
 #blocking, returns output
 def exec_get_stdout(command):
    args = command.split()
@@ -245,9 +246,21 @@ def exec_get_stdout(command):
 def exec_bash(command):
    os.system(command)
 
-def get_random(length=15):
-    return read_file('/dev/urandom', length, binary=True)
+def get_random_byte_str(length=15):
+   return read_file('/dev/urandom', length, binary=True)
 
+#TODO: maybe replace with python version
+def get_random(max_num=None):
+   rand_len = get_random_byte_str(1)[0] % 10 + 1
+   rand_str = get_random_byte_str(rand_len)
+   total = 0
+   i = 1
+   for x in rand_str:
+      total += x * i
+      i*= 10
+   if max_num is None:
+      return total
+   return total % (max_num + 1)
 
 ##group and passwd stuff
 #TODO: add stuff for making groups, adduser,
