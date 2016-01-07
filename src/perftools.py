@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 class Timer:
    def __enter__(self):
@@ -8,9 +9,10 @@ class Timer:
       self.end = time.clock()
       self.interval = self.end - self.start
 
-if __name__ == 'main':
-   with Timer() as t:
-      conn = httplib.HTTPConnection('google.com')
-      conn.request('GET', '/')
-
-print('Request took %.03f sec.' % t.interval)
+if __file__ == 'main':
+   try:
+      with Timer() as t:
+         conn = httplib.HTTPConnection('google.com')
+         conn.request('GET', '/')
+   finally:
+      print('Request took %.03f sec.' % t.interval)
