@@ -50,9 +50,8 @@ def is_link(path):
 def is_mount_point(path):
    return os.path.ismount(path)
 
-@expandhome
-def rm(path):
-   """Removes files and directories"""
+#helper rm function
+def _rm_single(path):
    if is_dir(path):
       #os.removedirs(path) #only works for empty
       shutil.rmtree(path)
@@ -61,6 +60,14 @@ def rm(path):
    else:
       if file_exists(path):
          raise Exception('Trying to remove unknown file type')
+      else:
+         pass #trying to remove non-existant path
+
+@expandhome
+def rm(*paths):
+   """Removes files and directories"""
+   for path in paths:
+      _rm_single(path)
 
 @expandhome
 def cp(src, dst):

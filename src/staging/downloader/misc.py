@@ -27,20 +27,4 @@ def json_from_url(url):
       msg = 'Could not download json file %s.' % url
       raise Status(status.DOWNLOAD, msg)
 
-#TODO: use OrderedDict
-#https://docs.python.org/2/library/collections.html#collections.OrderedDict
-def get_chunk_index(lst_of_chunks, hash_to_get):
-   i = 0
-   for x in lst_of_chunks:
-      if x[0] == hash_to_get:
-         return i
-      i = i+1
-   return None
-
-def set_chunk_status(lst, hash_to_set, status):
-   i = get_chunk_index(lst, hash_to_set)
-   lst[i] = (lst[i][0], status)
-   #print(lst[i])
-
-
 

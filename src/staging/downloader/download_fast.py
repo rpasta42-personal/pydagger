@@ -1,57 +1,95 @@
 #TODO KK: ugly hack
-import sys
-sys.path.insert(0, __file__ + '/..')
-import status
-from status import Status
-import logging, os, requests, xxhash
-from downloader.misc import json_from_url
-from pycloak.threadutils import ThreadQueue
+#import sys
+#sys.path.insert(0, __file__ + '/..')
+#import status
+#from status import Status
+#import logging, os, requests, xxhash
+#from downloader.misc import json_from_url
+#from pycloak.threadutils import ThreadQueue
+#from pycloak import shellutils
+#from pycloak.shellutils import file_exists, exec_prog
+import misc
+from pycloak.shellutils import join, file_exists, read_json
 from pycloak import shellutils
-from pycloak.shellutils import file_exists, exec_prog
+
+from urlparse import urljoin
 
 logger = logging.getLogger(__name__)
 
-def get_conf(url, download_dir, useThreads):
-   data_path   = download_dir + '/download_data'
-   json_path   = download_dir + '/download.json'
-   hashes_path = download_dir + '/hashes.json'
-   hashes      = None
+#threadQueue = ThreadQueue()
+
+hashes_fname = 'hashes.json'
+conf_fname = 'download.json'
+
+local_remote_differ = 'Local and remote %s differ. Re-starting'
+
+def same_dict(a, b):
+   if cmp(a, b) == 0:
+      return True
+   else:
+      return False
+
+def get_latest_json(serv_url, download_dir, name):
+
+
+def get_conf(url, download_dir):
+   if not file_exists(download_dir):
+      shellutils.mkdir(download_dir)
+
+   conf_path   = join(download_dir, conf_fname)
+   hashes_path = join(download_dir, hashes_fname)
+
+   conf_url    = urljoin(url, conf_fname)
+   hashes_url  = urljoin(url, hashes_fname)
+
    resuming    = True
 
-   threadQueue = None
-   if useThreads:
-      threadQueue = ThreadQueue()
+   conf_serv = conf = None
+   hashes_serv = hashes = None
 
-   if not file_exists(download_dir):
-      os.mkdir(download_dir)
+   try:
+      conf_serv = misc.json_from_url(url)
+   except Exception e:
+      var = traceback.format_exc()
+      msg = "Can't get %s from %s. " % (conf_fname, conf_url)
+      msg += "Got this error: %s" % var
+      raise Error(error.DOWNLOAD, msg)
 
-   conf_new = json_from_url(url)
-   conf = shellutils.read_json(json_path)
+   conf = read_json(conf_path)
    if conf is None:
-      logger.info('No local download.json file found. Downloading download.json from server.')
-      conf = conf_new
+      msg =  'No local %s file found. ' % conf_fname
+      msg += 'Downloading %s from server.' % conf_fname
+      logger.info(msg)
+      conf = conf_serv
       resuming = False
    else:
-      logger.info('download.json read successfully')
+      logger.info('%s read successfully' % conf_fname)
+      if same_dict(conf, conf_serv):
+         logger.info('%s is latest. Resuming.' % conf_fname)
+      else:
+         logger.info(local_remote_differ % conf_fname)
+         resuming = False
+         conf = conf_serv
 
+   hashes_serv = misc.json_from_url(hashes_url)
+   hashes =  read_json(hashes_path)
    if not file_exists(hashes_path):
-      logger.info('No local hashes.json file found.')
+      logger.info('No local %s file found.' % hashes_fname)
       resuming = False
+      hashes = hashes_serv
    else:
-      logger.info('Local hashes file found.')
-
-   new_conf_ver = int(conf_new['version'])
-   conf_ver = int(conf['version'])
-   if new_conf_ver > conf_ver or new_conf_ver == -1:
-      conf = conf_new
-      logger.info('download.json on server is newer than local version. Restarting download process.')
-      resuming = False
-   else:
-      logger.info('Local download.json is the newest version.')
-   #have good conf now
+      logger.info('Local %s file found. Checking contents.' % hashes_fname)
+      hashes = read_json(hashes_path)
+      if same_dict(hashes, hashes_serv):
+         logger.info('%s is latest.' % hashes_fname)
+      else:
+         logger.info(local_remote_differ % hashes_fname)
+         resuming = False
+         hashes = hashes_serv
 
    raw_f_name = conf['raw-file']
-   raw_path = download_dir + '/' + raw_f_name
+   raw_path = join(download_dir, raw_f_name)
+
    raw_url = '/'.join(url.split('/')[:-1]) + '/' + raw_f_name
    #bro_url = raw_url + '.brotli'
    logger.info('raw file url: %s' % raw_url)
