@@ -175,10 +175,12 @@ class Benchmark(object):
          timer = timeit.default_timer # using platform specific timer
       self.timer = timer
       self.disable_gc = disable_gc
-      self.start = self.end = self.interval = None
+      self.interval = None
+      self.start = self.end = self.timer()
       self.result_callback = result_callback
 
    def elapsed(self):
+      self.end = self.timer()
       self.interval = self.end - self.start
       return self.interval
 
