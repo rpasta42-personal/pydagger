@@ -8,7 +8,6 @@ def parse_args():
    parser.add_argument('-s', '--chunk-size', dest='size', help='Specify chunk size in kilobytes (default 1024 or 1 MB)')
    parser.add_argument('-o', '--out-json', dest='output', help='where to store update info (default is "<FILE>.update_info")')
    parser.add_argument('-c', '--compress-type', dest='compress', help='compress=0 (none), compress=1 (whole image) and compress=2 (chunk)')
-   #parser.add_argument('-e', '--extra-json', dest='extras_path', help='Add extra json read from extra json file')
    #parser.add_argument('-d', '--data-dir', dest='data_dir', help='which directory to store update data and hashes in')
    parser.add_argument('update_file', metavar='raw-update', help='Raw update file from which we generate update')
    parser.add_argument('version', metavar='version', help='icloak version')

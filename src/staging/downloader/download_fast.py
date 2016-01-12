@@ -21,77 +21,64 @@ logger = logging.getLogger(__name__)
 hashes_fname = 'hashes.json'
 conf_fname = 'download.json'
 
-local_remote_differ = 'Local and remote %s differ. Re-starting'
-
 def same_dict(a, b):
    if cmp(a, b) == 0:
       return True
    else:
       return False
 
-def get_latest_json(serv_url, download_dir, name):
+def get_latest_json(serv_url, download_dir, fname):
+   json_path = join(download_dir, fname)
+   json_url = urljoin(serv_url, fname)
 
-
-def get_conf(url, download_dir):
-   if not file_exists(download_dir):
-      shellutils.mkdir(download_dir)
-
-   conf_path   = join(download_dir, conf_fname)
-   hashes_path = join(download_dir, hashes_fname)
-
-   conf_url    = urljoin(url, conf_fname)
-   hashes_url  = urljoin(url, hashes_fname)
-
-   resuming    = True
-
-   conf_serv = conf = None
-   hashes_serv = hashes = None
+   json_local = json_serv = None
+   resuming = True
 
    try:
-      conf_serv = misc.json_from_url(url)
+      json_serv = misc.json_from_url(json_url)
    except Exception e:
       var = traceback.format_exc()
-      msg = "Can't get %s from %s. " % (conf_fname, conf_url)
+      msg = "Can't get %s from %s. " % (fname, json_url)
       msg += "Got this error: %s" % var
       raise Error(error.DOWNLOAD, msg)
 
-   conf = read_json(conf_path)
-   if conf is None:
-      msg =  'No local %s file found. ' % conf_fname
-      msg += 'Downloading %s from server.' % conf_fname
+   json = read_json(json_path)
+   if json is None:
+      msg =  'No local %s file found. ' % fname
+      msg += 'Downloading %s from server.' % fname
       logger.info(msg)
-      conf = conf_serv
+      json = json_serv
       resuming = False
    else:
-      logger.info('%s read successfully' % conf_fname)
-      if same_dict(conf, conf_serv):
-         logger.info('%s is latest. Resuming.' % conf_fname)
+      logger.info('Local %s found. Checking contents.' % fname)
+      if same_dict(json, json_serv):
+         logger.info('%s is latest.' % fname)
       else:
-         logger.info(local_remote_differ % conf_fname)
+         logger.info('Local and remote %s differ.' % fname)
          resuming = False
-         conf = conf_serv
+         json = json_serv
+   return json, resuming
 
-   hashes_serv = misc.json_from_url(hashes_url)
-   hashes =  read_json(hashes_path)
-   if not file_exists(hashes_path):
-      logger.info('No local %s file found.' % hashes_fname)
-      resuming = False
-      hashes = hashes_serv
+def get_conf(serv_url, download_dir):
+   if not file_exists(download_dir):
+      shellutils.mkdir(download_dir)
+
+   ret = get_latest_json(serv_url, download_dir, conf_fname)
+   conf, latest_conf = ret
+   ret = get_latest_json(serv_url, download_dir, hashes_fname)
+   hashes, latest_hashes  = ret
+
+   resuming = False
+   if latest_conf and latest_hashes:
+      resuming = True
+      logger.info('Everything is up to date. Resuming.')
    else:
-      logger.info('Local %s file found. Checking contents.' % hashes_fname)
-      hashes = read_json(hashes_path)
-      if same_dict(hashes, hashes_serv):
-         logger.info('%s is latest.' % hashes_fname)
-      else:
-         logger.info(local_remote_differ % hashes_fname)
-         resuming = False
-         hashes = hashes_serv
+      logger.info('Files outdated. Restarting.')
 
    raw_f_name = conf['raw-file']
    raw_path = join(download_dir, raw_f_name)
 
-   raw_url = '/'.join(url.split('/')[:-1]) + '/' + raw_f_name
-   #bro_url = raw_url + '.brotli'
+   raw_url = urljoin(serv_url, raw_f_name)
    logger.info('raw file url: %s' % raw_url)
 
    return conf, raw_path, json_path, data_path, hashes_path, hashes, resuming, threadQueue, raw_url

@@ -1,0 +1,28 @@
+new downloader, pass folder instead of json name
+json is always called download.json
+check that everything is still the same
+can my C json parser parse master.json lol?
+
+        proxy = "127.0.0.1:8069"
+        proxy_dict = {
+            "http": "http://%s" % proxy,
+            "https": "https://%s" % proxy,
+            "ftp": "ftp://%s" % proxy
+        }
+
+r = requests.get(url, proxies=proxy_dict, verify='/etc/ssl/certs/ca-certificates.crt')
+
+
+def enable_proxy_mode(port=8069):
+   global proxy_dict
+   proxy = '127.0.0.1:%s' % port
+   proxy_dict = {
+      'http':  'http://%s' % proxy,
+      'https': 'https://%s' % proxy,
+      'ftp':   'ftp://%s' % proxy
+   }
+
+def disable_proxy_mode():
+   global proxy_dict
+   proxy_dict = None
+
