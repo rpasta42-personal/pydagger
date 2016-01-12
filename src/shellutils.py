@@ -92,8 +92,11 @@ def write_file(filePath, data, binary=False):
 
 def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
    if file_exists(filePath):
+      # FIXISSUE: where encoding error breaks updater flow
+      errors = 'replace'
       flags = 'r'
       if binary:
+         errors = None # FIXISSUE: remove encoding error replacement on binary data
          flags = 'rb'
       with open(filePath, flags) as f:
          if nBytes:
