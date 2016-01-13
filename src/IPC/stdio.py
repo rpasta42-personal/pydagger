@@ -145,6 +145,10 @@ module.exports = (function() {
     %(namespace)s.prototype.start = function() { //updater
         this._transport.start()
     }
+    // kills the child process
+    %(namespace)s.prototype.kill = function(n) {
+        this._transport.kill(n)
+    }
 """ % dict(namespace=self.namespace)
       elif lang in ["javascript"]:
          return "var %s = function(rpc) { this._rpc = rpc; }" % self.namespace
