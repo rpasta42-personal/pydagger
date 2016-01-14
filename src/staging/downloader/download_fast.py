@@ -81,6 +81,7 @@ def get_conf(serv_url, download_dir):
    raw_url = urljoin(serv_url, raw_f_name)
    logger.info('raw file url: %s' % raw_url)
 
+   #todo: left here
    return conf, raw_path, json_path, data_path, hashes_path, hashes, resuming, threadQueue, raw_url
 
 bad_block = None
