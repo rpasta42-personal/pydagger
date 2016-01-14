@@ -324,11 +324,14 @@ class ProgressBar(object):
         self.max_width = max_width
 
     def update(self, p, label=""):
+        tw,th = shutil.get_terminal_size(fallback=(80,40))
         self.spinner_tick += 1
         i = int((p * self.max_width) / 100)
         s = self.spinner[self.spinner_tick % len(self.spinner)]
         bar = "%s%s%s" % ("".join(['='] * i), s, "".join([' '] * (self.max_width - i - 1)))
-        sys.stdout.write("\r[%s] %s" % (bar, label))
+        out = "\r[%s] %s" % (bar, label)
+        pad = "".join([" "] * (tw - len(out)))
+        sys.stdout.write("%s%s" % (out, pad))
         sys.stdout.flush()
 
 
