@@ -2,15 +2,13 @@ import tarfile
 import io
 import os
 
-class TarFile(tarfile.TarFile):
-    def __init__(self, *args, **kwargs):
-        super(TarFile, self).__init__(*args, **kwargs)
-
-    def extractall_progress(path, on_progress):
-        members = self.getmembers()
-        total_members = len(members)
-        for member in members:
-            self.extract(member, path)
-            processed += 1
-            on_progress((processed * 100 / total_members), member)
+def untar(path, extract_path, on_progress):
+   with tarfile.open(path, 'r') as t:
+      members = t.getmembers()
+      total = len(members)
+      count=0
+      for member in members:
+         count+=1
+         t.extract(member, extract_path)
+         on_progress((count * 100) / total, member.name)
 
