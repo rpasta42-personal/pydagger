@@ -18,8 +18,10 @@ class DeferredProgress(object):
       count = 0
       for fn, args, kwargs, label, ignore_errors in self.fn:
          try:
+            logging.info("Deferred: %s" % label)
             fn(*args, **kwargs)
          except Exception as e:
+            logging.error(e)
             if not ignore_errors:
                raise e
 
