@@ -10,5 +10,5 @@ def untar(path, extract_path, on_progress):
       for member in members:
          count+=1
          t.extract(member, extract_path)
-         on_progress((count * 100) / total, member.name)
+         on_progress((count * 100) / total, total, count, member.name)
 

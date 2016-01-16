@@ -8,7 +8,7 @@ class DeferredProgress(object):
    def __init__(self):
       self.on_progress = Event()
       self.fn = list()
-      super(DefferedProgress, self).__init__()
+      super(DeferredProgress, self).__init__()
 
    def add(self, fn, args=(), kwargs=dict(), label=None, ignore_errors=False):
       self.fn.append((fn, args, kwargs, label, ignore_errors)) # storing function argument and kw arguments as tuple here
