@@ -15,4 +15,4 @@ install:
 upload:
 	./misc/bash/upload_lib
 lazy_install:
-	source `which virtualenvwrapper.sh` && workon icloak-updater && make && make install && workon icloak-updater-starter && make && make install
+	source `which virtualenvwrapper.sh` && workon pycloak && make && make install && deactivate && workon icloak-updater && make && make install && workon icloak-updater-starter && make && make install
