@@ -32,15 +32,19 @@ def is_link(path):
 def is_mount_point(path):
    return os.path.ismount(path)
 
-def rm(path):
+def rm(path, ignore_errors=False):
    """Removes files and directories"""
    if is_dir(path):
       #os.removedirs(path) #only works for empty
-      shutil.rmtree(path)
+      shutil.rmtree(path, ignore_errors=ignore_errors)
    elif is_file(path) or is_link(path):
-      os.remove(path)
+      try:
+         os.remove(path)
+      except Exception as e:
+         if not ignore_errors:
+            raise e
    else:
-      if file_exists(path):
+      if file_exists(path) and not ignore_errors:
          raise Exception('Trying to remove unknown file type')
 
 def cp(src, dst):
