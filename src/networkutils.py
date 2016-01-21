@@ -1,6 +1,6 @@
 import requests
 
-def check_connectivity(url = "http://icloak.me", expect_code = 200):
+def check_connectivity(url = "http://icloak.me", expect_code = 200, proxy=None, verify=False):
    """Simple connectivity check. We request a remote server(defaults icloak.me) and return True on status 200(default)"""
    try:
       r = requests.get(url)

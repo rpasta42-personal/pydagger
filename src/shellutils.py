@@ -51,23 +51,30 @@ def is_mount_point(path):
    return os.path.ismount(path)
 
 #helper rm function
-def _rm_single(path):
+@expandhome1
+def _rm_single(path, ignore_errors=False):
+   """Removes files and directories"""
    if is_dir(path):
       #os.removedirs(path) #only works for empty
-      shutil.rmtree(path)
+      shutil.rmtree(path, ignore_errors=ignore_errors)
    elif is_file(path) or is_link(path):
-      os.remove(path)
+      try:
+         os.remove(path)
+      except Exception as e:
+         if not ignore_errors:
+            raise e
    else:
-      if file_exists(path):
+      if file_exists(path) and not ignore_errors:
          raise Exception('Trying to remove unknown file type')
       else:
          pass #trying to remove non-existant path
 
-@expandhome
-def rm(*paths):
+#@expandhome
+def rm(*paths, ignore_errors=False):
    """Removes files and directories"""
    for path in paths:
-      _rm_single(path)
+      _rm_single(path, ignore_errors)
+
 
 @expandhome
 def cp(src, dst):
@@ -151,8 +158,11 @@ def write_file(filePath, data, binary=False):
 @expandhome1
 def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
    if file_exists(filePath):
+      # FIXISSUE: where encoding error breaks updater flow
+      errors = 'replace'
       flags = 'r'
       if binary:
+         errors = None # FIXISSUE: remove encoding error replacement on binary data
          flags = 'rb'
       with open(filePath, flags) as f:
          if nBytes:
@@ -397,11 +407,14 @@ class ProgressBar(object):
         self.max_width = max_width
 
     def update(self, p, label=""):
+        tw,th = shutil.get_terminal_size(fallback=(80,40))
         self.spinner_tick += 1
         i = int((p * self.max_width) / 100)
         s = self.spinner[self.spinner_tick % len(self.spinner)]
         bar = "%s%s%s" % ("".join(['='] * i), s, "".join([' '] * (self.max_width - i - 1)))
-        sys.stdout.write("\r[%s] %s" % (bar, label))
+        out = "\r[%s] %s" % (bar, label)
+        pad = "".join([" "] * (tw - len(out)))
+        sys.stdout.write("%s%s" % (out, pad))
         sys.stdout.flush()
 
 
