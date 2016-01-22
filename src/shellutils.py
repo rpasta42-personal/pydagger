@@ -28,14 +28,22 @@ def expandhome(func):
 
 @expandhome
 def mkdir(path):
-   """recursively create dirs (like mkdir -p). Expands home."""
+   """recursively create dirs (like mkdir -p). Expands home.
+
+   Args:
+      path (string): Path to directory to create.
+   """
    #os.mkdir(name) #make one directory
    #exists_ok prevents errors when dir already exists
    os.makedirs(path, exist_ok=True)
 
 @expandhome
 def ls(path='.'):
-   """List files in current directory (default is current directory). Expands home"""
+   """List files in current directory (default is current directory). Expands home
+
+   Args:
+      path='.' (string): Path where we want to list directories.
+   """
    return os.listdir(path)
 
 @expandhome
@@ -45,7 +53,7 @@ def is_file(path):
 
 @expandhome
 def is_dir(path):
-   """Check if given path is a directory. Expands home"""
+   """Checks if given path is a directory. Expands home"""
    return os.path.isdir(path)
 
 @expandhome
@@ -55,12 +63,13 @@ def is_link(path):
 
 @expandhome
 def is_mount_point(path):
-   """Check if given path is a mount point.. Expands home"""
+   """Check if given path is a mount point. Expands home"""
    return os.path.ismount(path)
 
 #helper rm function
 @expandhome1
 def _rm_single(path, ignore_errors=False):
+   """Helper function shouldn't be used outside library."""
    if is_dir(path):
       #os.removedirs(path) #only works for empty
       shutil.rmtree(path, ignore_errors=ignore_errors)
@@ -85,7 +94,7 @@ def rm(*paths, ignore_errors=False):
 
 @expandhome
 def cp(src, dst):
-   """Copy file or directory. Expands home"""
+   """Copies file or directory recursively. Expands home"""
    if is_dir(src):
       shutil.copytree(src, dst)
    elif is_file(src):
