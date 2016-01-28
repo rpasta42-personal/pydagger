@@ -33,7 +33,7 @@ def untar2(path, extract_path, on_progress, delete_destination_paths = False):
    cfile.on_read_progress += on_progress
    with tarfile.open(fileobj=cfile, mode='r') as t:
       if delete_destination_paths:
-         for(member in t.getnames()):
+         for member in t.getnames():
             full_path = os.path.join(extract_path, member)
             if os.path.exists(full_path):
                rm(full_path, False)
