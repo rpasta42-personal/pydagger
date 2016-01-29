@@ -3,8 +3,13 @@ import io
 import os
 import os.path
 import shutil
+import logging
+
 from pycloak.events import Event
 from pycloak.shellutils import rm
+
+logger = logging.getLogger(__name__)
+
 
 class CustomFileObject(io.FileIO):
    def __init__(self, path, *args, **kwargs):
@@ -35,7 +40,9 @@ def untar2(path, extract_path, on_progress, delete_destination_paths = False):
       if delete_destination_paths:
          for member in t.getnames():
             full_path = os.path.join(extract_path, member)
+            logger.debug("Checking existing path: %s" % full_path)
             if os.path.exists(full_path):
+               logger.debug("Path exists, deleting... %s" % full_path)
                rm(full_path, False)
 
       t.extractall(extract_path)
