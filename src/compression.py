@@ -40,12 +40,8 @@ def untar2(path, extract_path, on_progress, delete_destination_paths = False, de
       if delete_destination_paths:
          for member in t.getnames():
             full_path = os.path.join(extract_path, member)
-            logger.debug("Checking existing path: %s" % full_path)
             if os.path.exists(full_path):
                if member not in delete_destination_ignore:
-                  logger.debug("Path exists, deleting... %s" % full_path)
                   rm(full_path, False)
-               else:
-                  logger.debug("Ignoring path: %s" % full_path)
 
       t.extractall(extract_path)
