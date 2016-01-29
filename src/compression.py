@@ -33,7 +33,7 @@ def untar(path, extract_path, on_progress):
          t.extract(member, extract_path)
          #on_progress((count * 100) / total, total, count, member.name)
 
-def untar2(path, extract_path, on_progress, delete_destination_paths = False):
+def untar2(path, extract_path, on_progress, delete_destination_paths = False, delete_destination_ignore = []):
    cfile = CustomFileObject(path)
    cfile.on_read_progress += on_progress
    with tarfile.open(fileobj=cfile, mode='r') as t:
@@ -42,7 +42,10 @@ def untar2(path, extract_path, on_progress, delete_destination_paths = False):
             full_path = os.path.join(extract_path, member)
             logger.debug("Checking existing path: %s" % full_path)
             if os.path.exists(full_path):
-               logger.debug("Path exists, deleting... %s" % full_path)
-               rm(full_path, False)
+               if member not in delete_destination_ignore:
+                  logger.debug("Path exists, deleting... %s" % full_path)
+                  rm(full_path, False)
+               else:
+                  logger.debug("Ignoring path: %s" % full_path)
 
       t.extractall(extract_path)
