@@ -42,6 +42,6 @@ def untar2(path, extract_path, on_progress, delete_destination_paths = False, de
             full_path = os.path.join(extract_path, member)
             if os.path.exists(full_path):
                if member not in delete_destination_ignore:
-                  rm(full_path, False)
+                  rm(full_path, True)
 
       t.extractall(extract_path)
