@@ -1,0 +1,25 @@
+<html>
+<head>
+	<script>
+	var j = require('jscloak');
+	var utils = j.utils;
+
+	var pyipc = require('./start-service');
+	function sendPyMsg(m) {
+		pyipc.send(m);
+	}
+
+	function onPyMsg(data) {
+		alert(data);
+	}
+	pyipc.init(onPyMsg);
+	//pyipc.send('Hello');
+
+
+	sendPyMsg('hello');
+	</script>
+</head>
+<body>
+Hello
+</body>
+</html>

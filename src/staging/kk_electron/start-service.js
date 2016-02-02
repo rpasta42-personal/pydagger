@@ -12,17 +12,17 @@ function send(data) {
 }
 
 function init(on_data) {
-   child = child_process.spawn(__dirname + '/../../../gui_server.py')
+   child = child_process.spawn(__dirname + '/py_stdcom.py')
    //child.stdin.write(data);
    child.stderr.on('data', function(data) {
-      log('python ouput:' + data);
+      log('js: got error from python:' + String(data));
    });
    child.stdout.on('data', function(data) {
       //document.write(data);
       var msg = JSON.parse(data);
       if (msg['magic'] != 'gentoo_sicp_rms')
          log('error: bad python message');
-      on_data(msg);
+      on_data(JSON.stringify(msg));
    });
 }
 
