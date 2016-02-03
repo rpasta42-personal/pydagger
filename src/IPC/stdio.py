@@ -134,7 +134,8 @@ module.exports = (function() {
             base.emit("error", error);
         });
         this._rpc.on("emit", function(evt, args) {
-            base.emit(evt, args)
+            var combined_args = [evt].concat(args);
+            base.emit.apply(base, combined_args);
         });
     }
 
