@@ -1,5 +1,6 @@
 import os, os.path, importlib, json, sys, tempfile
 import shutil, signal, subprocess, platform
+from functools import wraps
 
 if platform.system() == 'Linux':
    import pwd, getpass, grp
@@ -7,12 +8,14 @@ from multiprocessing import Process
 
 #wrapper for only first argument path
 def expandhome1(func):
+   @wraps(func)
    def wrapper(path, *args, **kwargs):
       return func(expanduser(path), *args, **kwargs)
    return wrapper
 
 #wrapper for every argument
 def expandhome(func):
+   @wraps(func)
    def wrapper(*args, **kwargs):
       new_args = []
       for arg in args:
@@ -25,18 +28,18 @@ def expandhome(func):
 
 @expandhome
 def mkdir(path):
-   """recursively create dirs (like mkdir -p). Expands ~
+   """recursively create dirs (like mkdir -p). Expands home.
 
    Args:
       path (string): Path to directory to create.
    """
    #os.mkdir(name) #make one directory
    #exists_ok prevents errors when dir already exists
-   os.makedirs(name, exist_ok=True)
+   os.makedirs(path, exist_ok=True)
 
 @expandhome
 def ls(path='.'):
-   """Prints content of local directory or path provided to it. Expands ~
+   """List files in current directory (default is current directory). Expands home
 
    Args:
       path='.' (string): Path where we want to list directories.
@@ -45,22 +48,22 @@ def ls(path='.'):
 
 @expandhome
 def is_file(path):
-   """Checks if given path is a file. Expands ~"""
+   """Check if given path is a file. Expands home"""
    return os.path.isfile(path)
 
 @expandhome
 def is_dir(path):
-   """Checks if given path is a directory. Expands ~"""
+   """Checks if given path is a directory. Expands home"""
    return os.path.isdir(path)
 
 @expandhome
 def is_link(path):
-   """Checks if given path is a link. Expands ~"""
+   """Check if given path is a link. Expands home"""
    return os.path.islink(path)
 
 @expandhome
 def is_mount_point(path):
-   """Checks if given path is a mount point. Expands ~"""
+   """Check if given path is a mount point. Expands home"""
    return os.path.ismount(path)
 
 #helper rm function
@@ -84,7 +87,7 @@ def _rm_single(path, ignore_errors=False):
 
 #@expandhome
 def rm(*paths, ignore_errors=False):
-   """Removes files and directories"""
+   """Removes files and directories. Expands home"""
    for path in paths:
       _rm_single(path, ignore_errors)
 
@@ -99,15 +102,18 @@ def cp(src, dst):
 
 @expandhome
 def mv(src, dst):
+   """Moves a file or directory. Expands home"""
    shutil.move(src, dst)
 
 @expandhome
 def ln(target, name):
+   """Creates symbolic link. Expands home"""
    os.symlink(target, name)
 
 #http://stackoverflow.com/a/13197763
 @expandhome
 def cd(path):
+   """Changes directory. Expands home"""
    os.chdir(path)
 
 class cd_:
@@ -124,12 +130,15 @@ class cd_:
 
 ##PATH STUFF
 def cwd():
+   """Get current working directory."""
    return os.getcwd()
 
 def join(*args):
+   """Same as os.path.join."""
    return os.path.join(*args)
 
 def expanduser(path):
+   """Expands ~ and %HOME% into full path."""
    return os.path.expanduser(path)
 
 #os.path
@@ -150,6 +159,7 @@ def get_abs_path_relative_to(current_file, *relative_path):
 
 @expandhome
 def check_paths(*paths):
+   """Returns list of given paths that don't exist. Expands home"""
    bad = []
    for p in paths:
       if file_exists(p) is False:
@@ -159,10 +169,12 @@ def check_paths(*paths):
 
 @expandhome
 def file_exists(filePath):
+   """Checks if path exists in the system. Expands home"""
    return (filePath is not None) and os.path.exists(filePath)
 
 @expandhome1
 def write_file(filePath, data, binary=False):
+   """Writes data to file. Expands home"""
    flags = 'w'
    if binary:
       flags = 'wb'
@@ -171,6 +183,7 @@ def write_file(filePath, data, binary=False):
 
 @expandhome1
 def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
+   """Read data from file. Expands home"""
    if file_exists(filePath):
       # FIXISSUE: where encoding error breaks updater flow
       errors = 'replace'
@@ -190,10 +203,12 @@ def read_file(filePath, nBytes=None, binary=False, createIfNeeded=False):
 
 @expandhome1
 def write_json(path, json_data):
+   """Writes given json object to a file. Expands home"""
    write_file(path, json.dumps(json_data) + '\n')
 
 @expandhome1
 def read_json(path):
+   """Reads a file and returns it as json object. Expands home"""
    if path:
       data = read_file(path)
       if data:
@@ -202,7 +217,7 @@ def read_json(path):
 
 @expandhome1
 def get_file_size(filename):
-   "Get the file size by seeking end"
+   """Get the file size by seeking end. Expands home"""
    fd = os.open(filename, os.O_RDONLY)
    try:
       return os.lseek(fd, 0, os.SEEK_END)
@@ -211,6 +226,7 @@ def get_file_size(filename):
    return -1
 
 def parse_mtab():
+   """Parses mtab and returns it as a list of dictionaries. Linux only."""
    mounts = []
    mtab_str = read_file('/etc/mtab').strip()
    entries = mtab_str.split('\n')
@@ -230,6 +246,7 @@ def parse_mtab():
 
 #works for drives and partitions
 def get_mount_point(drive):
+   """Gets mount point of given drive."""
    mounts = parse_mtab()
    for device in mounts:
       if device['mount-device'] == drive:
@@ -432,9 +449,11 @@ def if_exists_append_copy(path):
    return path
 
 def tmp_folder(prefix='tmp', suffix=''):
+   """Returns path to temporary folder with prefix and suffix."""
    return tempfile.mkdtemp(suffix, prefix)
 
 class ProgressBar(object):
+    """Progress bar for terminal."""
     def __init__(self, max_width = 20):
         self.spinner = ['/', '-', '\\', '-']
         self.spinner_tick = 0

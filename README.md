@@ -11,3 +11,8 @@ for dbug:
 for gi (misc.py):
 ln -s /usr/lib/python3/dist-packages/gi /home/kkostya/.virtualenvs/pycloak/lib/python3.4/site-packages/
 
+
+/webroot/www/wiki/docs
+~/docs/pycloak/docs
+
+spynx and pylint autopip8
