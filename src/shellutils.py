@@ -411,6 +411,26 @@ def recompile_pycloak(m=None, pycloak_path='~/work/pycloak'):
    if m is not None:
       reload_module(m)
 
+@expandhome
+def if_exists_append_copy(path):
+   """f('test.py') = if not exists, return path, otherwise test-copy-0.py
+                     if test-copy-0.py exists, return test-copy-1.py
+   """
+   if file_exists(path):
+      path_before_ext, ext = os.path.splitext(path)
+      splitted = path_before_ext.split('-')
+      already_copy = False
+      if len(splitted) > 2 and splitted[-1].isdigit() and splitted[-2] == 'copy':
+         already_copy = True
+      ret_str = ''
+      if not already_copy:
+         ret_str = "%s%s%s" % (path_before_ext, '-copy-0', ext)
+      else:
+         first_part = '-'.join(splitted[0:-2])
+         ret_str = "%s%s%i%s" % (first_part, '-copy-', int(splitted[-1])+1, ext)
+      return if_exists_append_copy(ret_str)
+   return path
+
 def tmp_folder(prefix='tmp', suffix=''):
    return tempfile.mkdtemp(suffix, prefix)
 
