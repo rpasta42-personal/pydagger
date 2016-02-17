@@ -113,7 +113,7 @@ class Worker(threading.Thread):
    messages back and forth from parent thread to this thread"""
    
    def __init__(self, worker_fn, parent_message_queue=None, use_message_queue=True):
-      self.parent_thread = mqueue
+      self.parent_thread = parent_message_queue
       self.worker = worker_fn
       if use_message_queue:
          self.worker_thread = MessageQueue()
