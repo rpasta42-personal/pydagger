@@ -4,6 +4,8 @@ import threading
 import traceback
 import inspect
 
+LOGGER = logging.getLogger(__name__)
+
 try:
    from queue import Queue
 except:
@@ -120,19 +122,24 @@ class Worker(threading.Thread):
       else:
          self.worker_thread = None
       self.is_running = False
+      self.on_exit = Event()
       super(Worker, self).__init__()
 
    def start(self):
       self.is_running = True
 
       if inspect.isgeneratorfunction(self.worker):
+         LOGGER.info("Worker is a generator")
          for i in self.worker(self):
             if self.work_thread:
                self.work_thread.process()
       else:
+         LOGGER.info("Worker is not a generator")
          self.worker(self)
 
       self.is_running = False
+      if self.parent_thread != None:
+         self.parent_thread.invoke(self.on_exit, self)
 
 class ThreadQueue():
    #def __init__(...., busy_sleep = 0.05)??
