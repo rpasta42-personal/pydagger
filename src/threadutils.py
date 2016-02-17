@@ -2,6 +2,8 @@ import os
 import time
 import threading
 import traceback
+import inspect
+
 try:
    from queue import Queue
 except:
@@ -105,6 +107,32 @@ class EzThread:
       self.thread = self.t = threading.Thread(target=call)
       self.t.daemon = True
       self.t.start()
+
+class Worker(threading.Thread):
+   """Generic enhanced thread class. Uses MessageQueue to pass
+   messages back and forth from parent thread to this thread"""
+   
+   def __init__(self, worker_fn, parent_message_queue=None, use_message_queue=True):
+      self.parent_thread = mqueue
+      self.worker = worker_fn
+      if use_message_queue:
+         self.worker_thread = MessageQueue()
+      else:
+         self.worker_thread = None
+      self.is_running = False
+      super(Worker, self).__init__()
+
+   def start(self):
+      self.is_running = True
+
+      if inspect.isgeneratorfunction(self.worker):
+         for i in self.worker(self):
+            if self.work_thread:
+               self.work_thread.process()
+      else:
+         self.worker(self)
+
+      self.is_running = False
 
 class ThreadQueue():
    #def __init__(...., busy_sleep = 0.05)??
