@@ -12,7 +12,7 @@ from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
 
 import logging
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 class StdioClient(object):
    def __init__(self, server):
@@ -50,6 +50,13 @@ class StdinReader(threading.Thread):
             pass
          time.sleep(0.1)
 
+def exposed(fn):
+    def _exposed(*fargs, **kwargs):
+        fn(*fargs, **kwargs)
+
+    _exposed.exposed = True
+    _exposed.exposed_args = [arg for arg in inspect.getargspec(fn).args if arg != "self"]
+    return _exposed
 
 class StdioCom(object):
 
@@ -80,6 +87,16 @@ class StdioCom(object):
          self.stdin_reader.stop()
          self.stdin_reader = None
 
+   def create_emitter(self, event):
+      """Simple emit method wrapper. Adds event to API registration and
+      wraps emit call to better document the event API call."""
+      base = self
+      def _emit_proxy(*fargs):
+         base.emit(event, *fargs)
+         LOGGER.debug("[%s] %s", event, fargs)
+         _emit_proxy.exposed_event = True
+      return _emit_proxy
+
    def emit(self, event, *args):
       self.call("@.%s" % event, list(args));
 
@@ -102,7 +119,10 @@ class StdioCom(object):
          m = getattr(self, method)
          # check if its exposed
          if m and hasattr(m, "exposed"):
-            args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
+            if hasattr(m, "exposed_args"):
+               args = m.exposed_args
+            else:
+               args = [arg for arg in inspect.getargspec(m).args if arg != "self"]
             api_src.append(g_method(lang, method, args, inspect.getdoc(m)))
          elif m and hasattr(m, "exposed_raw"):
             if hasattr(m, "exposed_args"):
@@ -254,7 +274,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             params = data_json.get("params", None)
             id = data_json.get("id", None)
 
-            logger.info('[electron] %s(%s)' % (method, params))
+            LOGGER.info('[electron] %s(%s)' % (method, params))
             if method is None or params is None:
                self._send_error(code=-32600, message ="Invalid Request", id=id)
             elif self.dispatcher.get(method, None) == None:
@@ -269,8 +289,8 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
                   exc_str = traceback.format_exc()
                   #self._send_error(code=-32000, message = str(exc_value), data = "\n".join(exception_list), id=id)
                   self._send_error(code=-32000, message = str(exc_value), data = exc_str, id=id)
-                  logger.error('Exception type: %s; Exception value: %s' %(exc_type, exc_value))
-                  logger.error(exc_str)
+                  LOGGER.error('Exception type: %s; Exception value: %s' %(exc_type, exc_value))
+                  LOGGER.error(exc_str)
 
          else:
             print("INVALID PROTOCOL: %s" % line)
@@ -339,4 +359,3 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
    def on_idle(self):
       pass
-

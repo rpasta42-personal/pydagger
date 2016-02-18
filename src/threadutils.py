@@ -127,6 +127,13 @@ class Worker(threading.Thread):
       self.is_running = False
       self.on_exit = Event()
       self.daemon = True
+      self.paused = False
+
+   def stop():
+      self.is_running = False
+
+   def pause(self, p):
+      self.paused = p
 
    def run(self):
       self.is_running = True
@@ -134,8 +141,13 @@ class Worker(threading.Thread):
       if inspect.isgeneratorfunction(self.worker):
          LOGGER.info("Worker is a generator")
          for i in self.worker(self):
-            if self.worker_thread:
-               self.worker_thread.process()
+            if self.paused:
+               while self.paused and self.is_running:
+                  if self.work_thread:
+                     self.work_thread.process()
+            else:
+               if self.worker_thread:
+                  self.worker_thread.process()
       else:
          LOGGER.info("Worker is not a generator")
          self.worker(self)
