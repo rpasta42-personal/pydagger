@@ -223,10 +223,14 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 </html>"""
       return ""
 
+   def on_init(self):
+      pass
+
    def start(self):
       """Main stdio loop"""
       self.run = True
       self.stdin_reader.start()
+      self.on_init()
       while self.run:
          self.mqueue.process()
          self._on_idle()
@@ -331,48 +335,6 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 
    def _on_idle(self):
       """Handles internal communication parsing"""
-      """
-      data = None
-      try:
-         line = sys.stdin.readline()
-         if line:
-            data = line.strip()
-      except:
-         pass
-
-      if data:
-         if self.protocol == "JSONRPC":
-            try:
-               data_json = json.loads(data)
-            except:
-               self._send_error(code=-32700, message="Invalid json data", data=traceback.format_exc(), id=None)
-               return
-
-            if "result" in data_json or "error" in data_json:
-               self._handle_client_response(data_json)
-               return
-
-            method = data_json.get("method", None)
-            params = data_json.get("params", None)
-            id = data_json.get("id", None)
-
-            if method is None or params is None:
-               self._send_error(code=-32600, message ="Invalid Request", id=id)
-            elif self.dispatcher.get(method, None) == None:
-               self._send_error(code=-32601, message = "Method Not Found", id=id)
-            else:
-               try:
-                  result = self.dispatcher[method](**params)
-                  self._send(json.dumps(dict(jsonrpc="2.0", result=result, id=id)))
-               except Exception as ex:
-                  exc_type, exc_value, exc_traceback = sys.exc_info()
-                  exception_list = traceback.format_stack()
-
-                  self._send_error(code=-32000, message = exc_value, data = "\n".join(exception_list), id=id)
-         else:
-            print("INVALID PROTOCOL: %s" % line)
-            self.run = False
-      """
       self.on_idle()
 
    def on_idle(self):

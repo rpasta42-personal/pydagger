@@ -114,8 +114,10 @@ class EzThread:
 class Worker(threading.Thread):
    """Generic enhanced thread class. Uses MessageQueue to pass
    messages back and forth from parent thread to this thread"""
-   
+
    def __init__(self, worker_fn, parent_message_queue=None, use_message_queue=True):
+      super(Worker, self).__init__()
+
       self.parent_thread = parent_message_queue
       self.worker = worker_fn
       if use_message_queue:
@@ -124,16 +126,16 @@ class Worker(threading.Thread):
          self.worker_thread = None
       self.is_running = False
       self.on_exit = Event()
-      super(Worker, self).__init__()
+      self.daemon = True
 
-   def start(self):
+   def run(self):
       self.is_running = True
 
       if inspect.isgeneratorfunction(self.worker):
          LOGGER.info("Worker is a generator")
          for i in self.worker(self):
-            if self.work_thread:
-               self.work_thread.process()
+            if self.worker_thread:
+               self.worker_thread.process()
       else:
          LOGGER.info("Worker is not a generator")
          self.worker(self)
@@ -260,4 +262,3 @@ if False:
    #while b.done is not True:
    #    time.sleep(1)
    b.thread.join()
-
