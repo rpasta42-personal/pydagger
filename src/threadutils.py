@@ -126,6 +126,7 @@ class Worker(threading.Thread):
          self.worker_thread = None
       self.is_running = False
       self.on_exit = Event()
+      self.on_error = Event()
       self.daemon = True
       self.paused = False
 
@@ -140,17 +141,25 @@ class Worker(threading.Thread):
 
       if inspect.isgeneratorfunction(self.worker):
          LOGGER.info("Worker is a generator")
-         for i in self.worker(self):
-            if self.paused:
-               while self.paused and self.is_running:
-                  if self.work_thread:
-                     self.work_thread.process()
-            else:
-               if self.worker_thread:
-                  self.worker_thread.process()
+         try:
+            for i in self.worker(self):
+               if self.paused:
+                  while self.paused and self.is_running:
+                     if self.work_thread:
+                        self.work_thread.process()
+               else:
+                  if self.worker_thread:
+                     self.worker_thread.process()
+         except:
+            LOGGER.info(traceback.format_exc())
+            self.on_error(traceback.format_exc())
       else:
          LOGGER.info("Worker is not a generator")
-         self.worker(self)
+         try:
+            self.worker(self)
+         except:
+            LOGGER.info(traceback.format_exc())
+            self.on_error(traceback.format_exc())
 
       self.is_running = False
       if self.parent_thread != None:
