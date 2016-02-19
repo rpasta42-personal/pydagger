@@ -130,7 +130,7 @@ class Worker(threading.Thread):
       self.daemon = True
       self.paused = False
 
-   def stop():
+   def stop(self):
       self.is_running = False
 
    def pause(self, p):
