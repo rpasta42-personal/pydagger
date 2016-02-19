@@ -117,7 +117,8 @@ class Worker(threading.Thread):
 
    def __init__(self, worker_fn, parent_message_queue=None, use_message_queue=True):
       super(Worker, self).__init__()
-
+      assert worker_fn is not None, "worker_fn can NOT be None."
+      
       self.parent_thread = parent_message_queue
       self.worker = worker_fn
       if use_message_queue:
@@ -145,8 +146,8 @@ class Worker(threading.Thread):
             for i in self.worker(self):
                if self.paused:
                   while self.paused and self.is_running:
-                     if self.work_thread:
-                        self.work_thread.process()
+                     if self.worker_thread:
+                        self.worker_thread.process()
                else:
                   if self.worker_thread:
                      self.worker_thread.process()
