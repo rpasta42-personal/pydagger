@@ -2,7 +2,15 @@ import tarfile
 import io
 import os
 import os.path
+import shutil
+import logging
+import platform
+
 from pycloak.events import Event
+from pycloak.shellutils import rm
+
+logger = logging.getLogger(__name__)
+
 
 class CustomFileObject(io.FileIO):
    def __init__(self, path, *args, **kwargs):
@@ -26,8 +34,17 @@ def untar(path, extract_path, on_progress):
          t.extract(member, extract_path)
          #on_progress((count * 100) / total, total, count, member.name)
 
-def untar2(path, extract_path, on_progress):
+def untar2(path, extract_path, on_progress, delete_destination_paths = False, delete_destination_ignore = []):
    cfile = CustomFileObject(path)
    cfile.on_read_progress += on_progress
    with tarfile.open(fileobj=cfile, mode='r') as t:
+      if delete_destination_paths:
+         for member in t.getnames():
+            if platform.system() == 'Windows':
+               member = member.replace('/', '\\')
+            full_path = os.path.join(extract_path, member)
+            if os.path.exists(full_path):
+               if member not in delete_destination_ignore:
+                  rm(full_path, True)
+
       t.extractall(extract_path)

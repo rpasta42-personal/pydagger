@@ -2,6 +2,11 @@ import os
 import time
 import threading
 import traceback
+import inspect
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
 try:
    from queue import Queue
 except:
@@ -105,6 +110,61 @@ class EzThread:
       self.thread = self.t = threading.Thread(target=call)
       self.t.daemon = True
       self.t.start()
+
+class Worker(threading.Thread):
+   """Generic enhanced thread class. Uses MessageQueue to pass
+   messages back and forth from parent thread to this thread"""
+
+   def __init__(self, worker_fn, parent_message_queue=None, use_message_queue=True):
+      super(Worker, self).__init__()
+      assert worker_fn is not None, "worker_fn can NOT be None."
+      
+      self.parent_thread = parent_message_queue
+      self.worker = worker_fn
+      if use_message_queue:
+         self.worker_thread = MessageQueue()
+      else:
+         self.worker_thread = None
+      self.is_running = False
+      self.on_exit = Event()
+      self.on_error = Event()
+      self.daemon = True
+      self.paused = False
+
+   def stop(self):
+      self.is_running = False
+
+   def pause(self, p):
+      self.paused = p
+
+   def run(self):
+      self.is_running = True
+
+      if inspect.isgeneratorfunction(self.worker):
+         LOGGER.info("Worker is a generator")
+         try:
+            for i in self.worker(self):
+               if self.paused:
+                  while self.paused and self.is_running:
+                     if self.worker_thread:
+                        self.worker_thread.process()
+               else:
+                  if self.worker_thread:
+                     self.worker_thread.process()
+         except:
+            LOGGER.info(traceback.format_exc())
+            self.on_error(traceback.format_exc())
+      else:
+         LOGGER.info("Worker is not a generator")
+         try:
+            self.worker(self)
+         except:
+            LOGGER.info(traceback.format_exc())
+            self.on_error(traceback.format_exc())
+
+      self.is_running = False
+      if self.parent_thread != None:
+         self.parent_thread.invoke(self.on_exit, self)
 
 class ThreadQueue():
    #def __init__(...., busy_sleep = 0.05)??
@@ -224,4 +284,3 @@ if False:
    #while b.done is not True:
    #    time.sleep(1)
    b.thread.join()
-
