@@ -81,25 +81,34 @@ class TCPServer(object):
       self.sock.close()
 
    def update(self):
+      handler = None
+      i = 0
+      listen_count = 1
       while 1:
          try:
-            self.sock.listen(100)
+            self.sock.listen(listen_count)
             sock, address = self.sock.accept()
             handler = TCPHandler(sock, address, self.handler)
             self.handlers.append(handler)
-            LOGGER.debug("NEW CLIENT: %s", address)
+            listen_count = len(self.handlers)
          except socket.error as e:
-            pass
+            listen_count /= 2
+            if listen_count == 0:
+               listen_count = 1
 
-         yield 
-
-         for handler in self.handlers:
+         if handler:
             handler.update()
-            yield
+
+         if len(self.handlers) > 0:
+            handler = self.handlers[i%len(self.handlers)]
+            i = 0 if i > len(self.handlers) else i+1
+
+         yield len(self.handlers)
 
    def update_sync(self):
-      for i in self.update():
-         time.sleep(0.01)
+      for busy in self.update():
+         if busy < 100:
+            time.sleep(0.01)
 
 class TCPClient(object):
 
