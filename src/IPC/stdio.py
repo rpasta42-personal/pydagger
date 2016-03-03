@@ -62,45 +62,6 @@ def exposed(fn):
     _exposed.exposed_args = [arg for arg in inspect.getargspec(fn).args if arg != "self"]
     return _exposed
 
-class ThreadedTCPHandler(socketserver.BaseRequestHandler):
-
-   def handle(self):
-      try:
-         line =  self.rfile.readline()
-         if line:
-            data = line.strip()
-            self.server.reader._com.mqueue.invoke(self._com._on_data, data)
-      except:
-         LOGGER.error(traceback.format_exc())
-
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-   def __init__(self, server_address, RequestHandlerClass, reader, bind_and_activate=True):
-      self.reader = reader
-      super(ThreadedTCPServer, self).__init__(server_address, RequestHandlerClass, bind_and_activate)
-
-class TCPReader(object):
-   def __init__(self, com, host='127.0.0.1', port=8765):
-      self._com = com
-      self.host = host
-      self.port = port
-      self.server = ThreadedTCPServer((self.host, self.port), ThreadedTCPRequestHandler, reader=self)
-      self.thread = threading.Thread(target=server.serve_forever)
-
-   def send(self, data):
-      pass
-
-   def setDaemon(self, deamon):
-      self.thread.setDaemon(daemon)
-
-   def start(self):
-      self.thread.start()
-
-   def stop(self):
-      if self.server:
-         self.server.shutdown()
-         self.server.server_close()
-         self.server = None
-
 class StdioCom(object):
 
    def __init__(self, namespace, protocol = "JSONRPC", ReaderClass=StdinReader, **kwargs):
