@@ -14,7 +14,17 @@ class TCPHandler(object):
       self.handler = handler
       self.reader = TCPReader(self.sock)
       self.writer = TCPWriter(self.sock)
+      self.connected = True
       self.on_connected()
+
+   def __del__(self):
+      if self.connected:
+         self.disconnect()
+
+   def disconnect(self):
+      if self.connected:
+         self.connected = False
+         self.sock.close()
 
    def update(self):
       packet = self.reader.update()
@@ -47,6 +57,9 @@ class TCPServer(object):
 
    def __del__(self):
       if self.started:
+         for client in self.handlers:
+            client.disconnect()
+
          self.stop()
 
    def start(self):
