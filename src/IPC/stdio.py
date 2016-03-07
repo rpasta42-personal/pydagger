@@ -10,7 +10,6 @@ import threading
 from pprint import pprint, pformat
 from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
-from pycloak import sockets
 
 import logging
 LOGGER = logging.getLogger(__name__)
@@ -36,10 +35,6 @@ class StdinReader(threading.Thread):
       self._running = False
       super(StdinReader, self).__init__()
 
-   def send(self, data):
-      sys.stdout.write("%s\n" % data)
-      sys.stdout.flush()
-
    def stop(self):
       self._running = False
 
@@ -55,37 +50,6 @@ class StdinReader(threading.Thread):
             pass
          time.sleep(0.1)
 
-class TCPServer(threading.Thread):
-
-   def __init__(self, com, address, port):
-      self._client = sockets.TCPServer(address, port, self._handler)
-      self._com = com
-      self._buffer = bytearray()
-      self._runnign = False
-      super(TCPReader, self).__init__()
-
-   def _handler(self, e, data=None):
-      if e == "on_data":
-         for byte in data:
-            if byte != "\n":
-               self._buffer.append(byte)
-               line = str(bytes(self._buffer), 'ascii')
-               line = line.strip()
-               self._com.mqueue.invoke(self._com._on_data, line)
-            else:
-               self._buffer = bytearray()
-
-   def run(self):
-      self._running = True
-      try:
-         self._client.connect()
-         while self._running:
-            self._client.update()
-            time.sleep(0.1)
-      except Exception as ex:
-         LOGGER.exception(ex)
-      self._running = False
-
 def exposed(fn):
     def _exposed(*fargs, **kwargs):
         fn(*fargs, **kwargs)
@@ -96,7 +60,7 @@ def exposed(fn):
 
 class StdioCom(object):
 
-   def __init__(self, namespace, protocol = "JSONRPC", ReaderClass=StdinReader, **kwargs):
+   def __init__(self, namespace, protocol = "JSONRPC"):
       self.namespace = namespace
       self.run = False
       #self._jsonrpc = JSONRPCResponseManager()
@@ -107,7 +71,7 @@ class StdioCom(object):
       self.client = StdioClient(self)
       self.dispatcher = dict()
       self.mqueue = MessageQueue()
-      self.stdin_reader = ReaderClass(self, **kwargs)
+      self.stdin_reader = StdinReader(self)
       self.stdin_reader.setDaemon(True)
       # list of callable members
       methods = [ method for method in dir(self) if callable(getattr(self, method)) ]
@@ -310,7 +274,7 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
             params = data_json.get("params", None)
             id = data_json.get("id", None)
 
-            LOGGER.info('[client] %s(%s)' % (method, params))
+            LOGGER.info('[electron] %s(%s)' % (method, params))
             if method is None or params is None:
                self._send_error(code=-32600, message ="Invalid Request", id=id)
             elif self.dispatcher.get(method, None) == None:

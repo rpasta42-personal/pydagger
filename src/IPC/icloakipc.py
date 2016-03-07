@@ -16,12 +16,13 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 def exposed(fn):
-    def _exposed(*fargs, **kwargs):
-        return fn(*fargs, **kwargs)
+   def _exposed(*fargs, **kwargs):
+      return fn(*fargs, **kwargs)
 
-    _exposed.exposed = True
-    _exposed.exposed_args = [arg for arg in inspect.getargspec(fn).args if arg != "self"]
-    return _exposed
+   _exposed.__doc__ = fn.__doc__   
+   _exposed.exposed = True
+   _exposed.exposed_args = [arg for arg in inspect.getargspec(fn).args if arg != "self"]
+   return _exposed
 
 class DocGenerator(object):
 
@@ -31,6 +32,7 @@ class DocGenerator(object):
       self.api_instance = api_factory(namespace, None)
       self.transport = transport
       self.transport_args = transport_args
+      self.method_join_char = "\n\n"
       self.methods = dict()
       members = [ member for member in dir(self.api_instance) if callable(getattr(self.api_instance, member)) ]
       for member in members:
@@ -41,6 +43,8 @@ class DocGenerator(object):
             self.methods[member] = m
 
    def generate_doc(self, format):
+      if format in ("dict", "json"):
+         self.method_join_char = ','
       return self._api_generator(format, "doc")
 
    def generate_api(self, lang):
@@ -79,7 +83,15 @@ class DocGenerator(object):
 
 
       api_src.append(g_end(lang))
-      return "\n\n".join(api_src)
+      if lang not in ('dict', 'json'):
+         result = self.method_join_char.join(api_src)
+      else:
+         result = api_src[0] + self.method_join_char.join(api_src[1:-1]) + api_src[-1]
+
+      if lang in ('dict'):
+         result = json.loads(result)
+
+      return result
 
    def _generate_api_start(self, lang):
       if lang in ["nodejs"]:
@@ -167,6 +179,8 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
 .method .doc { padding-left: 4em; }
 """
          return '<!doctype html><html><head><title>%(namespace)s Documentation</title><style type="text/css">%(style)s</style></head><body><div class="namespace">%(namespace)s</div>' % dict(namespace=self.namespace, style=style)
+      elif format in ("dict", "json"):
+         return "{"
 
       return ""
 
@@ -181,12 +195,23 @@ html, body { width: 100%; height: 100%; padding: 0; margin: 0; }
       if format == "html":
          args_txt = ['<span class="arg">%s</span>' % arg for arg in args]
          return '<div class="method"><span class="name">%(method)s</span>(<span class="args">%(args)s</span>)<div class="doc">%(doc)s</div></div>' % dict(method=method, args=", ".join(args_txt), doc=doc)
+
+      if format in ("dict", "json"):
+         return '"%s": %s ' % (method,
+            json.dumps(dict(
+               method=method,
+               params=args,
+               doc=doc))
+         )
       return ""
 
    def _generate_doc_end(self, format):
       if format == "html":
          return """</body>
 </html>"""
+      if format in ("dict", "json"):
+         return "}"
+
       return ""
 
 class ProtocolError(Exception):
@@ -212,6 +237,14 @@ class MethodNotFound(ProtocolError):
 class ServerError(ProtocolError):
    def __init__(self, message, id=None, data=None):
       super(ServerError, self).__init__(message, -32000, id, data)
+
+class TimeoutError(Exception):
+   pass
+
+class RemoteError(Exception):
+   def __init__(self, error):
+      self.error = error
+      super(RemoteError, self).__init__(error['message'])
 
 class Protocol(object):
 
@@ -283,7 +316,49 @@ class ExposedAPI(object):
    def on_init(self):
       pass
 
-class TCPTransport(object):
+   @exposed
+   def ipc_doc(self, format='text'):
+      """Returns documentation about this remote object. Defaults to text format"""
+      doc = DocGenerator(self.namespace, lambda a,b: self)
+      return doc.generate_doc(format)
+
+class TCPClientTransport(object):
+   def __init__(self, address, port):
+      self.address = address
+      self.port = port
+
+      self.on_data = Event()
+      self.on_connected = Event()
+
+      self._client = sockets.TCPClient(address, port, self.on_client_event)
+
+      self._buffer = bytearray()
+
+   def connect(self):
+      self._client.connect()
+
+   def disconnect(self):
+      self._client.disconnect()
+
+   def update(self):
+      self._client.update()
+
+   def on_client_event(self, event, client, data=None):
+      if event == "on_connected":
+         self.on_connected(self)
+      elif event == "on_data":
+         for c in data:
+            if c == 10:
+               self.on_data(self, bytes(self._buffer))
+               del self._buffer[:]
+            else:
+               self._buffer.append(c)
+
+   def send(self, data):
+      assert isinstance(data, bytes), 'data must be bytes'
+      self._client.writer.send(data)
+
+class TCPServerTransport(object):
 
    def __init__(self, address, port, listen=1):
       self.address = address
@@ -293,7 +368,7 @@ class TCPTransport(object):
       self.on_session_data = Event()
       self.on_session_removed = Event()
 
-      self._server = sockets.TCPServer(address, port, self.on_client_event)
+      self._server = sockets.TCPServer(address, port, self.on_client_event, listen=listen)
       self._server_update = None
       self._clients = dict()
       self._clients_buffer = dict()
@@ -317,7 +392,6 @@ class TCPTransport(object):
          for c in data:
             if c == 10:
                line = bytes(self._clients_buffer[session_id])
-               LOGGER.debug(line)
                self.on_session_data(session_id, line)
                del self._clients_buffer[session_id][:]
             else:
@@ -333,7 +407,6 @@ class TCPTransport(object):
       assert data != b'null\n', "data can not be null"
 
       if session_id in self._clients:
-         LOGGER.debug("[%s] SEND: %s", session_id, data)
          self._clients[session_id].writer.send(data)
       else:
          LOGGER.error("[%s] SESSION NOT FOUND", session_id)
@@ -391,8 +464,8 @@ class IPCSession(object):
                      LOGGER.debug("[%s] RESULT: %s", method, result)
                      self.send(prot.encode_result(id=id, result=result))
                   except Exception as ex:
+                     LOGGER.error("REMOTE ERROR: %s\n%s", str(ex), traceback.format_exc())
                      self.send(prot.encode_error(id=id, message=str(ex), data=traceback.format_exc()))
-                     LOGGER.exception(ex)
                      return
                else:
                   LOGGER.debug("METHOD [%s] FOUND BUT NOT EXPOSED", method)
@@ -412,7 +485,7 @@ class IPCServer(object):
 
    @classmethod
    def new_greentcp_server(cls, address, port, api_factory, protocol_factory=Protocol):
-      return cls(api_factory=api_factory, transport=TCPTransport(address, port, listen=1), protocol_factory=protocol_factory)
+      return cls(api_factory=api_factory, transport=TCPServerTransport(address, port, listen=1), protocol_factory=protocol_factory)
 
    @classmethod
    def new_stdio_server(cls, api_factory, protocol_factory=Protocol):
@@ -453,10 +526,136 @@ class IPCServer(object):
 
          self.mqueue.process()
          self.on_idle()
-         time.sleep(0.1)
+         time.sleep(0.01)
 
    def on_init(self):
       pass
 
    def on_idle(self):
       pass
+
+class IPCClient(object):
+
+   @classmethod
+   def new_greentcp_client(cls, address, port, namespace=None, protocol_factory=Protocol, sync=False):
+      return cls(transport=TCPClientTransport(address, port), namespace=namespace, protocol_factory=protocol_factory, sync=sync)
+
+   def __init__(self, transport, namespace=None, protocol_factory=Protocol, sync=False):
+      self._transport = transport
+      self._protocol = protocol_factory()
+      self._send_id = 0
+      self._namespace = namespace
+      self._sync = sync
+
+      self.ipc_on_connected = Event
+      self.ipc_on_disconnected = Event #TODO: test for disconnection
+
+      self._transport.on_data += self.__on_data
+      self._transport.on_connected += self.__on_connected
+      self._events = dict()
+
+      self._event_handlers = dict()
+
+   def ipc_connect(self):
+      self._transport.connect()
+
+   def ipc_disconnect(self):
+      self._transport.disconnect()
+
+   def ipc_update(self):
+      self._transport.update()
+
+   def on(self, event, callback):
+      if event not in self._event_handlers:
+         self._event_handlers[event] = Event()
+      self._event_handlers[event] += callback
+
+   def trigger(self, event, *args):
+      if event in self._event_handlers:
+         self._event_handlers[event](*args)
+
+   def __getattr__(self, name):
+      def _fn(*args):
+         method = name if self._namespace is None else "%s.%s" % (self._namespace, name)
+         packet = self._protocol.encode_call(self._send_id, method, *args)
+         event = IPCEvent(self._send_id, self)
+         self._events[self._send_id] = event
+         self._send_id += 1
+         self._transport.send(packet)
+         if self._sync:
+            return event.wait()
+         else:
+            return event
+      
+      return _fn
+
+   def __on_data(self, transport, data):
+      try:
+         id, method, args, result, error = self._protocol.decode_message(data)
+      except InvalidProtocolSyntax as syntax_exception:
+         LOGGER.exception(syntax_exception)
+         raise syntax_exception
+      except InvalidProtocolRequest as request_exception:
+         LOGGER.exception(request_exception)
+         raise request_exception
+
+      if method:
+
+         if not args:
+            args = []
+
+         if method[0] == '@':
+            try:
+               self.trigger(method[1:], *args)
+            except Exception as ex:
+               LOGGER.exception(ex)
+         else:
+            LOGGER.error("METHOD NOT EXPOSED/FOUND: %s", method)
+
+
+      elif result:
+         if id in self._events:
+            self._events[id].on_result(result)
+            del self._events[id]
+      elif error:
+         if id in self._events:
+            self._events[id].on_error(error)
+            del self._events[id]
+
+   def __on_connected(self, transport):
+      self.ipc_on_connected(self)
+      
+class IPCEvent(object):
+
+   def __init__(self, id, client):
+      self.id = id
+      self.on_result = Event()
+      self.on_error = Event()
+      self._client = client
+
+   def wait(self, timeout=-1):
+      self._wait_success = None
+      self.on_result += self._on_wait_result
+      self.on_error += self._on_wait_error
+      start_time = time.time()
+      while self._wait_success is None:
+         self._client.ipc_update()
+         elapsed_time = time.time() - start_time
+         if timeout > -1 and elapsed_time > timeout:
+            raise TimeoutError()
+         time.sleep(0.01)
+
+      if self._wait_success:
+         return self._wait_result
+      else:
+         raise RemoteError(self._wait_error)
+
+   def _on_wait_result(self, result):
+      self._wait_result = result
+      self._wait_success = True
+
+   def _on_wait_error(self, error):
+      self._wait_error = error
+      self._wait_success = False
+
+

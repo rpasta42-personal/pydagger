@@ -48,10 +48,11 @@ class TCPHandler(object):
 
 class TCPServer(object):
 
-   def __init__(self, ip, port, handler):
+   def __init__(self, ip, port, handler, listen=-1):
       self.address = (ip, port)
       self.handler = handler
       self.handlers = list()
+      self.listen = listen
       self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       self.started = False
 
@@ -86,11 +87,16 @@ class TCPServer(object):
       listen_count = 1
       while 1:
          try:
+            if self.listen != -1:
+               listen_count = self.listen
+
             self.sock.listen(listen_count)
             sock, address = self.sock.accept()
             handler = TCPHandler(sock, address, self.handler)
             self.handlers.append(handler)
-            listen_count = len(self.handlers)
+
+            if self.listen != -1:
+               listen_count = len(self.handlers)
          except socket.error as e:
             listen_count /= 2
             if listen_count == 0:
