@@ -25,19 +25,35 @@ class TestServer(ExposedAPI):
       raise Exception("some odd exception")
 
 if len(sys.argv) > 1:
+
+   if len(sys.argv) > 2:
+      transport = sys.argv[2]
+   else:
+      transport = 'tcp'
+
    if sys.argv[1] == 'server':
-      server = IPCServer.new_greentcp_server(
-         address='127.0.0.1', 
-         port=7890, 
-         api_factory=TestServer)
+      if transport == 'tcp':
+         server = IPCServer.new_tcp_transport(
+            ip='127.0.0.1', 
+            port=7890, 
+            api_factory=TestServer)
+      elif transport == 'unix':
+         server = IPCServer.new_unix_transport(
+            address='/tmp/ipc.pid',
+            api_factory=TestServer)
       server.start()
    elif sys.argv[1] == 'client':
-      client = IPCClient.new_greentcp_client(
-         address='127.0.0.1',
-         port=7890,
-         namespace='test',
-         sync=True)
-
+      if transport == 'tcp':
+         client = IPCClient.new_tcp_transport(
+            ip='127.0.0.1',
+            port=7890,
+            namespace='test',
+            sync=True)
+      elif transport == 'unix':
+         client = IPCClient.new_unix_transport(
+            address='/tmp/ipc.pid',
+            namespace='test',
+            sync=True)
       def test_event_handler(self):
          print("on test event!")
 

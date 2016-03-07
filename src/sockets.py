@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import socket
@@ -5,15 +6,15 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-class TCPHandler(object):
+class SocketHandler(object):
 
    def __init__(self, sock, address, handler):
       self.sock = sock
       self.sock.setblocking(0)
       self.address = address
       self.handler = handler
-      self.reader = TCPReader(self.sock)
-      self.writer = TCPWriter(self.sock)
+      self.reader = SocketReader(self.sock)
+      self.writer = SocketWriter(self.sock)
       self.connected = True
       self.on_connected()
 
@@ -46,14 +47,29 @@ class TCPHandler(object):
          except Exception as ex:
             LOGGER.exception(ex)
 
-class TCPServer(object):
+class SocketServer(object):
 
-   def __init__(self, ip, port, handler, listen=-1):
-      self.address = (ip, port)
+   @classmethod
+   def new_tcp_server(cls, ip, port, handler, listen=-1):
+      return cls((ip, port), handler, listen, socket_type=socket.AF_INET)
+
+   @classmethod
+   def new_unix_server(cls, address, handler, listen=-1):
+      return cls(address, handler, listen, socket_type=socket.AF_UNIX)
+
+   def __init__(self, address, handler, listen=-1, socket_type=socket.AF_INET):
+      self.address = address
       self.handler = handler
       self.handlers = list()
       self.listen = listen
-      self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      if socket_type == socket.AF_UNIX:
+         try:
+            os.unlink(self.address)
+         except OSError:
+            if os.path.exists(self.address):
+               raise
+
+      self.sock = socket.socket(socket_type, socket.SOCK_STREAM)
       self.started = False
 
    def __del__(self):
@@ -92,7 +108,7 @@ class TCPServer(object):
 
             self.sock.listen(listen_count)
             sock, address = self.sock.accept()
-            handler = TCPHandler(sock, address, self.handler)
+            handler = SocketHandler(sock, address, self.handler)
             self.handlers.append(handler)
 
             if self.listen != -1:
@@ -116,14 +132,22 @@ class TCPServer(object):
          if busy < 100:
             time.sleep(0.01)
 
-class TCPClient(object):
+class SocketClient(object):
 
-   def __init__(self, ip, port, handler=None):
-      self.address = (ip, port)
+   @classmethod
+   def new_tcp_client(cls, ip, port, handler):
+      return cls((ip, port), handler, socket_type=socket.AF_INET)
+
+   @classmethod
+   def new_unix_client(cls, address, handler):
+      return cls(address, handler, socket_type=socket.AF_UNIX)
+
+   def __init__(self, address, handler=None, socket_type=socket.AF_INET):
+      self.address = address
       self.handler = handler
-      self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      self.reader = TCPReader(self.sock)
-      self.writer = TCPWriter(self.sock)
+      self.sock = socket.socket(socket_type, socket.SOCK_STREAM)
+      self.reader = SocketReader(self.sock)
+      self.writer = SocketWriter(self.sock)
       self.connected = False
 
    def __del__(self):
@@ -169,7 +193,7 @@ class TCPClient(object):
    def send(self, data):
       self.writer.send(data)
 
-class TCPWriter(object):
+class SocketWriter(object):
 
    def __init__(self, sock):
       self.sock = sock
@@ -187,7 +211,7 @@ class TCPWriter(object):
       assert isinstance(data, bytes), "Data must be bytes"
       self.send_buffer.extend(data)
 
-class TCPReader(object):
+class SocketReader(object):
 
    def __init__(self, sock):
       self.sock = sock
@@ -222,11 +246,12 @@ if __name__ == '__main__':
       if e == 'on_connected':
          client.writer.send(b'HI SERVER!')
 
-   ip, port = ('0.0.0.0', 7890)
+   #address = ('127.0.0.1', 7890)
+   address = '/tmp/test.pid'
 
    if sys.argv[1] == 'server':
       LOGGER.debug("STARTING SERVER")
-      srv = TCPServer(ip, port, server_handle)
+      srv = SocketServer.new_unix_server(address, server_handle)
       try:
          srv.start()
          srv.update_sync()
@@ -241,7 +266,7 @@ if __name__ == '__main__':
       LOGGER.debug("STARTING CLIENT")
       clients = []
       for i in range(0, total):
-         client = TCPClient(ip, port, client_handle)
+         client = SocketClient.new_unix_client(address, client_handle)
          clients.append(client)
          client.connect()
 

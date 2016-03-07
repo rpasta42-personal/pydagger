@@ -6,6 +6,7 @@ import traceback
 import inspect
 import textwrap
 import threading
+import socket
 
 from pprint import pprint, pformat
 from pycloak.events import Event
@@ -26,7 +27,7 @@ def exposed(fn):
 
 class DocGenerator(object):
 
-   def __init__(self, namespace, api_factory, transport='TCPIOLib', transport_args='address, port'):
+   def __init__(self, namespace, api_factory, transport='SocketIOLib', transport_args='address, port'):
       self.namespace = namespace
       self.api_factory = api_factory
       self.api_instance = api_factory(namespace, None)
@@ -322,15 +323,25 @@ class ExposedAPI(object):
       doc = DocGenerator(self.namespace, lambda a,b: self)
       return doc.generate_doc(format)
 
-class TCPClientTransport(object):
-   def __init__(self, address, port):
+class SocketClientTransport(object):
+
+   @classmethod
+   def new_tcp_transport(cls, ip, port):
+      return cls((ip, port), socket_type=socket.AF_INET)
+
+   @classmethod
+   def new_unix_transport(cls, address):
+      return cls(address, socket_type=socket.AF_UNIX)
+
+   def __init__(self, address, socket_type=None):
+      assert socket_type is not None, "Socket type is invalid"
+
       self.address = address
-      self.port = port
 
       self.on_data = Event()
       self.on_connected = Event()
 
-      self._client = sockets.TCPClient(address, port, self.on_client_event)
+      self._client = sockets.SocketClient(address, self.on_client_event, socket_type=socket_type)
 
       self._buffer = bytearray()
 
@@ -358,17 +369,29 @@ class TCPClientTransport(object):
       assert isinstance(data, bytes), 'data must be bytes'
       self._client.writer.send(data)
 
-class TCPServerTransport(object):
+class SocketServerTransport(object):
 
-   def __init__(self, address, port, listen=1):
+   @classmethod
+   def new_tcp_transport(cls, ip, port, listen=1):
+      return cls((ip, port), listen, socket_type=socket.AF_INET)
+
+   @classmethod
+   def new_unix_transport(cls, address, listen=1):
+      return cls(address, listen, socket_type=socket.AF_UNIX)
+
+   def __init__(self, address, listen=1, socket_type=None):
       self.address = address
-      self.port = port
 
       self.on_session_added = Event()
       self.on_session_data = Event()
       self.on_session_removed = Event()
 
-      self._server = sockets.TCPServer(address, port, self.on_client_event, listen=listen)
+      self._server = sockets.SocketServer(
+         address, 
+         self.on_client_event, 
+         listen=listen, 
+         socket_type=socket_type)
+
       self._server_update = None
       self._clients = dict()
       self._clients_buffer = dict()
@@ -383,7 +406,7 @@ class TCPServerTransport(object):
       next(self._server_update)
 
    def on_client_event(self, event, client, data=None):
-      session_id = "%s:%s" % client.address
+      session_id = str(client.address)
       if event == "new_client":
          self._clients[session_id] = client
          self._clients_buffer[session_id] = bytearray()
@@ -484,12 +507,12 @@ class IPCSession(object):
 class IPCServer(object):
 
    @classmethod
-   def new_greentcp_server(cls, address, port, api_factory, protocol_factory=Protocol):
-      return cls(api_factory=api_factory, transport=TCPServerTransport(address, port, listen=1), protocol_factory=protocol_factory)
+   def new_tcp_transport(cls, ip, port, api_factory, protocol_factory=Protocol):
+      return cls(api_factory=api_factory, transport=SocketServerTransport.new_tcp_transport(ip, port, listen=1), protocol_factory=protocol_factory)
 
    @classmethod
-   def new_icloakipc_server(cls, api_factory, protocol_factory=Protocol):
-      return cls(api_factory=api_factory, transport=StdIOTransport(), protocol_factory=protocol_factory)
+   def new_unix_transport(cls, address, api_factory, protocol_factory=Protocol):
+      return cls(api_factory=api_factory, transport=SocketServerTransport.new_unix_transport(address, listen=1), protocol_factory=protocol_factory)
 
    def __init__(self, api_factory, transport, protocol_factory=Protocol):
       self.transport = transport
@@ -537,8 +560,11 @@ class IPCServer(object):
 class IPCClient(object):
 
    @classmethod
-   def new_greentcp_client(cls, address, port, namespace=None, protocol_factory=Protocol, sync=False):
-      return cls(transport=TCPClientTransport(address, port), namespace=namespace, protocol_factory=protocol_factory, sync=sync)
+   def new_tcp_transport(cls, ip, port, namespace=None, protocol_factory=Protocol, sync=False):
+      return cls(transport=SocketClientTransport.new_tcp_transport(ip, port), namespace=namespace, protocol_factory=protocol_factory, sync=sync)
+   @classmethod
+   def new_unix_transport(cls, address, namespace=None, protocol_factory=Protocol, sync=False):
+      return cls(transport=SocketClientTransport.new_unix_transport(address), namespace=namespace, protocol_factory=protocol_factory, sync=sync)
 
    def __init__(self, transport, namespace=None, protocol_factory=Protocol, sync=False):
       self._transport = transport
