@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from pycloak.IPC.icloakipc import exposed, ExposedAPI, IPCServer, TCPTransport
+from pycloak.IPC.icloakipc import exposed, ExposedAPI, IPCServer, TCPTransport, DocGenerator
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -27,3 +27,6 @@ server = IPCServer.new_greentcp_server(
    port=7890, 
    api_factory=TestServer)
 server.start()
+
+#doc = DocGenerator('test', TestServer)
+#print(doc.generate_api('nodejs'))
