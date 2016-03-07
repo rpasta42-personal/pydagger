@@ -99,11 +99,11 @@ class DocGenerator(object):
 module.exports = (function() {
     var util = require('util');
     var EventEmitter = require('events').EventEmitter;
-    var stdio = require("stdio");
+    var icloakipc = require("icloakipc");
 
     var %(namespace)s = function(%(init_args)s, options) {
-        this._transport = new stdio.%(transport)s(%(init_args)s, options);
-        this._rpc = new stdio.jsonrpc(this._transport, "%(namespace)s");
+        this._transport = new icloakipc.%(transport)s(%(init_args)s, options);
+        this._rpc = new icloakipc.jsonrpc(this._transport, "%(namespace)s");
         var base = this;
         this._rpc.on("connected", function() {
            base.emit("connected");
@@ -488,7 +488,7 @@ class IPCServer(object):
       return cls(api_factory=api_factory, transport=TCPServerTransport(address, port, listen=1), protocol_factory=protocol_factory)
 
    @classmethod
-   def new_stdio_server(cls, api_factory, protocol_factory=Protocol):
+   def new_icloakipc_server(cls, api_factory, protocol_factory=Protocol):
       return cls(api_factory=api_factory, transport=StdIOTransport(), protocol_factory=protocol_factory)
 
    def __init__(self, api_factory, transport, protocol_factory=Protocol):
@@ -517,7 +517,7 @@ class IPCServer(object):
       del self._session[session_id]
 
    def start(self):
-      """Main stdio loop"""
+      """Main icloakipc loop"""
       self._is_running = True
       self.transport.start()
       self.on_init()
