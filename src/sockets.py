@@ -3,6 +3,7 @@ import sys
 import time
 import socket
 import logging
+import traceback
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,10 +29,18 @@ class SocketHandler(object):
          self.sock.close()
 
    def update(self):
-      packet = self.reader.update()
-      if packet:
-         self.on_data(packet)
-      self.writer.update()
+      try:
+         packet = self.reader.update()
+         if packet:
+            self.on_data(packet)
+         self.writer.update()
+         return True
+      except OSError as ose:
+         self.connected = False
+         return False
+      except BrokenPipeError as bpe:
+         self.connected = False
+         return False
 
    def on_data(self, data):
       if self.handler:
@@ -54,13 +63,14 @@ class SocketServer(object):
       return cls((ip, port), handler, listen, socket_type=socket.AF_INET)
 
    @classmethod
-   def new_unix_server(cls, address, handler, listen=-1):
-      return cls(address, handler, listen, socket_type=socket.AF_UNIX)
+   def new_unix_server(cls, address, handler, listen=-1, permissions=None):
+      return cls(address, handler, listen, socket_type=socket.AF_UNIX, permissions=permissions)
 
-   def __init__(self, address, handler, listen=-1, socket_type=socket.AF_INET):
+   def __init__(self, address, handler, listen=-1, socket_type=socket.AF_INET, permissions=None):
       self.address = address
       self.handler = handler
       self.handlers = list()
+      self.permissions = permissions
       self.listen = listen
       if socket_type == socket.AF_UNIX:
          try:
@@ -74,15 +84,18 @@ class SocketServer(object):
 
    def __del__(self):
       if self.started:
-         for client in self.handlers:
-            client.disconnect()
-
          self.stop()
 
    def start(self):
       try:
          self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
          self.sock.bind(self.address)
+         if self.permissions:
+            if isinstance(self.permissions, int):
+               os.chmod(self.address, self.permissions)
+            elif isinstance(self.permissions, list) or isinstance(self.permissions, tuple):
+               os.chmod(self.address, self.permissions[1])
+               os.chown(self.address, self.permissions[0][0], self.permissions[0][1])
          self.sock.setblocking(0)
          self.started = True
          return True
@@ -95,6 +108,8 @@ class SocketServer(object):
 
    def stop(self):
       self.started = False
+      for client in self.handlers:
+         client.disconnect()
       self.sock.close()
 
    def update(self):
@@ -119,7 +134,9 @@ class SocketServer(object):
                listen_count = 1
 
          if handler:
-            handler.update()
+            if not handler.update():
+               del self.handlers[self.handlers.index(handler)]
+               handler = None
 
          if len(self.handlers) > 0:
             handler = self.handlers[i%len(self.handlers)]
@@ -180,14 +197,20 @@ class SocketClient(object):
             LOGGER.debug(ex)
 
    def update(self):
-      packet = self.reader.update()
-      if packet:
-         self.on_data(packet)
-      self.writer.update()
+      try:
+         packet = self.reader.update()
+         if packet:
+            self.on_data(packet)
+         self.writer.update()
+         return True
+      except BrokenPipeError as bpe:
+         self.connected = False
+         return False
 
    def update_sync(self):
       while self.connected:
-         self.update()
+         if not self.update():
+            return
          time.sleep(0.01)
 
    def send(self, data):
@@ -204,6 +227,10 @@ class SocketWriter(object):
          sent = self.sock.send(self.send_buffer)
          if sent > 0:
             del self.send_buffer[:sent]
+      except BrokenPipeError as bpe:
+         raise bpe
+      except OSError as ose:
+         raise ose
       except socket.error as e:
          LOGGER.debug(e)
 
@@ -220,11 +247,18 @@ class SocketReader(object):
    def update(self):
       try:
          packet = self.sock.recv(self.buffer_size)
+         if len(packet) == 0:
+            raise BrokenPipeError("Disconnected")
          if packet:
             return packet
       except BlockingIOError as bio:
          pass
+      except BrokenPipeError as bpe:
+         raise bpe
+      except OSError as ose:
+         raise ose
       except socket.error as e:
+         traceback.print_exc()
          LOGGER.exception(e)
 
       return False

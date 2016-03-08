@@ -54,7 +54,8 @@ if len(sys.argv) > 1:
             address='/tmp/ipc.pid',
             namespace='test',
             sync=True)
-      def test_event_handler(self):
+
+      def test_event_handler():
          print("on test event!")
 
       client.on('test_event', test_event_handler)

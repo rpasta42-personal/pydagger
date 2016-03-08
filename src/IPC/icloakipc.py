@@ -247,6 +247,9 @@ class RemoteError(Exception):
       self.error = error
       super(RemoteError, self).__init__(error['message'])
 
+class DisconnectedError(Exception):
+   pass
+
 class Protocol(object):
 
    def decode_message(self, data):
@@ -352,7 +355,7 @@ class SocketClientTransport(object):
       self._client.disconnect()
 
    def update(self):
-      self._client.update()
+      return self._client.update()
 
    def on_client_event(self, event, client, data=None):
       if event == "on_connected":
@@ -376,10 +379,10 @@ class SocketServerTransport(object):
       return cls((ip, port), listen, socket_type=socket.AF_INET)
 
    @classmethod
-   def new_unix_transport(cls, address, listen=1):
-      return cls(address, listen, socket_type=socket.AF_UNIX)
+   def new_unix_transport(cls, address, listen=1, permissions=None):
+      return cls(address, listen, socket_type=socket.AF_UNIX, permissions=permissions)
 
-   def __init__(self, address, listen=1, socket_type=None):
+   def __init__(self, address, listen=1, socket_type=None, permissions=None):
       self.address = address
 
       self.on_session_added = Event()
@@ -390,7 +393,8 @@ class SocketServerTransport(object):
          address, 
          self.on_client_event, 
          listen=listen, 
-         socket_type=socket_type)
+         socket_type=socket_type,
+         permissions=permissions)
 
       self._server_update = None
       self._clients = dict()
@@ -398,9 +402,17 @@ class SocketServerTransport(object):
 
       self._buffer = bytearray()
 
+   def __del__(self):
+      self.stop()
+
    def start(self):
       self._server.start()
       self._server_update = self._server.update()
+
+   def stop(self):
+      if self._server:
+         self._server.stop()
+         self._server = None
 
    def update(self):
       next(self._server_update)
@@ -511,8 +523,8 @@ class IPCServer(object):
       return cls(api_factory=api_factory, transport=SocketServerTransport.new_tcp_transport(ip, port, listen=1), protocol_factory=protocol_factory)
 
    @classmethod
-   def new_unix_transport(cls, address, api_factory, protocol_factory=Protocol):
-      return cls(api_factory=api_factory, transport=SocketServerTransport.new_unix_transport(address, listen=1), protocol_factory=protocol_factory)
+   def new_unix_transport(cls, address, api_factory, protocol_factory=Protocol, permissions=None):
+      return cls(api_factory=api_factory, transport=SocketServerTransport.new_unix_transport(address, listen=1, permissions=permissions), protocol_factory=protocol_factory)
 
    def __init__(self, api_factory, transport, protocol_factory=Protocol):
       self.transport = transport
@@ -520,7 +532,11 @@ class IPCServer(object):
       self.mqueue = MessageQueue()
       self.api_factory = api_factory
       self._is_running = False
+      self._blocking = True
       self._sessions = dict()
+      self.on_idle = Event()
+      self.on_init = Event()
+      self.on_stop = Event()
 
       # event listeners for transport session handling
       self.transport.on_session_added += self.on_session_added
@@ -539,23 +555,30 @@ class IPCServer(object):
    def on_session_removed(self, session_id):
       del self._session[session_id]
 
-   def start(self):
+   def start(self, blocking=True):
       """Main icloakipc loop"""
       self._is_running = True
+      self._blocking = blocking
       self.transport.start()
-      self.on_init()
-      while self._is_running:
+      self.on_init(self)
+      if self._blocking:
+         while self._is_running:
+            self.update()
+            time.sleep(0.01)
+         self.on_stop(self)
+
+   def update(self):
+      if self._is_running:
          self.transport.update()
-
          self.mqueue.process()
-         self.on_idle()
-         time.sleep(0.01)
+         self.on_idle(self)
 
-   def on_init(self):
-      pass
-
-   def on_idle(self):
-      pass
+   def stop(self):
+      self._is_running = False
+      self.transport.stop()
+      if not self._blocking:
+         self.on_stop(self)
+      
 
 class IPCClient(object):
 
@@ -589,7 +612,8 @@ class IPCClient(object):
       self._transport.disconnect()
 
    def ipc_update(self):
-      self._transport.update()
+      if not self._transport.update():
+         raise DisconnectedError()
 
    def on(self, event, callback):
       if event not in self._event_handlers:
@@ -665,7 +689,11 @@ class IPCEvent(object):
       self.on_error += self._on_wait_error
       start_time = time.time()
       while self._wait_success is None:
-         self._client.ipc_update()
+         try:
+            self._client.ipc_update()
+         except DisconnectedError as dex:
+            raise dex
+
          elapsed_time = time.time() - start_time
          if timeout > -1 and elapsed_time > timeout:
             raise TimeoutError()
