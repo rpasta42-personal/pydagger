@@ -1,6 +1,6 @@
 var test_mod = require('test');
 
-var test = new test_mod('127.0.0.1', 7890);
+var test = new test_mod('/tmp/test.sock');
 
 test.on('connected', function() {
 	console.log('connected');

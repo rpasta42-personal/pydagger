@@ -27,7 +27,7 @@ def exposed(fn):
 
 class DocGenerator(object):
 
-   def __init__(self, namespace, api_factory, transport='SocketIOLib', transport_args='address, port'):
+   def __init__(self, namespace, api_factory, transport='UnixUILib', transport_args='address'):
       self.namespace = namespace
       self.api_factory = api_factory
       self.api_instance = api_factory(namespace, None)
