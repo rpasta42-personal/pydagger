@@ -434,7 +434,7 @@ class SocketServerTransport(object):
         next(self._server_update)
 
     def on_client_event(self, event, client, data=None):
-        session_id = str(client.address)
+        session_id = str(client)
         if event == "new_client":
             self._clients[session_id] = client
             self._clients_buffer[session_id] = bytearray()
@@ -482,6 +482,7 @@ class IPCSession(object):
     def call(self, method, *params):
         """Performs a remote method call"""
         try:
+            LOGGER.debug("REMOTE CALL: %s(%s)", method, params)
             self.send(self.protocol.encode_call(self.call_id, method, *params))
         except Exception as ex:
             LOGGER.exception(ex)
