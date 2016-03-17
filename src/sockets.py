@@ -187,7 +187,9 @@ class SocketClient(object):
             try:
                 self.handler('on_data', self, data)
             except Exception as ex:
+                LOGGER.info(data)
                 LOGGER.debug(ex)
+                LOGGER.debug(traceback.format_exc())
 
     def on_connected(self):
         if self.handler:

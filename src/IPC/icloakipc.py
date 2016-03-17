@@ -373,6 +373,7 @@ class SocketClientTransport(object):
         elif event == "on_data":
             for c in data:
                 if c == 10:
+                    LOGGER.debug(bytes(self._buffer))
                     self.on_data(self, bytes(self._buffer))
                     del self._buffer[:]
                 else:
@@ -634,12 +635,13 @@ class IPCClient(object):
             protocol_factory=protocol_factory,
             sync=sync)
 
-    def __init__(self, transport, namespace=None, protocol_factory=Protocol, sync=False):
+    def __init__(self, transport, namespace=None, protocol_factory=Protocol, sync=False, ignore_missing_events=True):
         self._transport = transport
         self._protocol = protocol_factory()
         self._send_id = 0
         self.namespace = namespace
         self._sync = sync
+        self._ignore_missing_events = ignore_missing_events
 
         self.ipc_on_connected = Event
         self.ipc_on_disconnected = Event #TODO: test for disconnection
@@ -668,7 +670,8 @@ class IPCClient(object):
     def trigger(self, event, *args):
         if event in self._event_handlers:
             self._event_handlers[event](*args)
-        else:
+        elif not self._ignore_missing_events:
+            LOGGER.error("Event handler not found: %s", event)
             raise MethodNotFound(id='event', method=event)
 
     def __getattr__(self, name):
@@ -713,11 +716,11 @@ class IPCClient(object):
                 raise MethodNotFound(id=id, method=method)
 
 
-        elif result:
+        elif result is not None:
             if id in self._events:
                 self._events[id].on_result(result)
                 del self._events[id]
-        elif error:
+        elif error is not None:
             if id in self._events:
                 self._events[id].on_error(error)
                 del self._events[id]
