@@ -66,6 +66,19 @@ def is_mount_point(path):
    """Check if given path is a mount point. Expands home"""
    return os.path.ismount(path)
 
+@expandhome
+def get_file_types(path):
+   types = []
+   if is_file(path):
+      types.append('file')
+   if is_dir(path):
+      types.append('dir')
+   if is_link(path):
+      types.append('link')
+   if is_mount_point(path):
+      types.append('mount point')
+   return types
+
 #helper rm function
 @expandhome1
 def _rm_single(path, ignore_errors=False):
@@ -90,7 +103,6 @@ def rm(*paths, ignore_errors=False):
    """Removes files and directories. Expands home"""
    for path in paths:
       _rm_single(path, ignore_errors)
-
 
 @expandhome
 def cp(src, dst):
@@ -141,12 +153,19 @@ def expanduser(path):
    """Expands ~ and %HOME% into full path."""
    return os.path.expanduser(path)
 
+@expandhome
+def expand_link(path):
+   os.abspath(path)
+ 
 #os.path
 #expanduser() = fixes ~
-#dirname(f) gets directory of f
-#realpath(path) removes symbolic links and prepands cwd()
+#dirname(f) gets directory path of f, doesn't work for relative path
+#realpath(path) removes symbolic links, and if file relative, add absolute path
+   #cwd = '/test/blah' #blah has file called test
+   #realpath('test') => 'test/blah/test'
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
 #abspath(path) same as normpath but also prepends cwd()
+#kinda same as normpath(join(os.getcwd(), path))
 
 #say you have app/src/main.py. To get path of project directory (app)
 #from main.py you can use get_relative_path(__file__, '..')
