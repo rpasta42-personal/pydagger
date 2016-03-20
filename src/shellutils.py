@@ -155,11 +155,20 @@ def expanduser(path):
 
 @expandhome
 def expand_link(path):
-   os.abspath(path)
- 
+   os.path.abspath(path)
+
+#dirname(f) gets directory path of f, doesn't work for relative path
+@expandhome
+def get_file_dir(path):
+   os.path.dirname(path)
+
+#gets the name of file given path
+@expandhome
+def get_file_name(path):
+   os.path.basename(path)
+
 #os.path
 #expanduser() = fixes ~
-#dirname(f) gets directory path of f, doesn't work for relative path
 #realpath(path) removes symbolic links, and if file relative, add absolute path
    #cwd = '/test/blah' #blah has file called test
    #realpath('test') => 'test/blah/test'
