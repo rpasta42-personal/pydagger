@@ -327,6 +327,9 @@ def chown(path, uid, gid):
 def get_current_user_id():
    return os.getuid()
 
+def is_admin():
+   return get_current_user_id() == 0
+
 def get_current_user_name():
    return getpass.getuser()
 
