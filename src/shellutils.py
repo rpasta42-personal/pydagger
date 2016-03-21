@@ -19,10 +19,16 @@ def expandhome(func):
    def wrapper(*args, **kwargs):
       new_args = []
       for arg in args:
-         new_args.append(expanduser(arg))
+         if arg is not None:
+            new_args.append(expanduser(arg))
+         else:
+            new_args.append(arg)
       new_kwargs = {}
       for key in kwargs:
-         new_arg[key] = expanduser(kwargs[key])
+         if kwargs[key] is not None:
+            new_kwarg[key] = expanduser(kwargs[key])
+         else:
+            new_kwargs[key] = kwargs[key]
       return func(*new_args, **new_kwargs)
    return wrapper
 
@@ -153,19 +159,20 @@ def expanduser(path):
    """Expands ~ and %HOME% into full path."""
    return os.path.expanduser(path)
 
+#TODO: kk Something bad here
 @expandhome
 def expand_link(path):
-   os.path.abspath(path)
+   return os.path.abspath(path)
 
 #dirname(f) gets directory path of f, doesn't work for relative path
 @expandhome
 def get_file_dir(path):
-   os.path.dirname(path)
+   return os.path.dirname(path)
 
 #gets the name of file given path
 @expandhome
 def get_file_name(path):
-   os.path.basename(path)
+   return os.path.basename(path)
 
 #os.path
 #expanduser() = fixes ~
