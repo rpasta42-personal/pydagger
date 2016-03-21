@@ -162,7 +162,7 @@ def expanduser(path):
 #TODO: kk Something bad here
 @expandhome
 def expand_link(path):
-   return os.path.abspath(path)
+   return os.path.realpath(path)
 
 #dirname(f) gets directory path of f, doesn't work for relative path
 @expandhome
