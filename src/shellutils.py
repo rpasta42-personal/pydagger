@@ -19,10 +19,16 @@ def expandhome(func):
    def wrapper(*args, **kwargs):
       new_args = []
       for arg in args:
-         new_args.append(expanduser(arg))
+         if arg is not None:
+            new_args.append(expanduser(arg))
+         else:
+            new_args.append(arg)
       new_kwargs = {}
       for key in kwargs:
-         new_arg[key] = expanduser(kwargs[key])
+         if kwargs[key] is not None:
+            new_kwarg[key] = expanduser(kwargs[key])
+         else:
+            new_kwargs[key] = kwargs[key]
       return func(*new_args, **new_kwargs)
    return wrapper
 
@@ -153,6 +159,7 @@ def expanduser(path):
    """Expands ~ and %HOME% into full path."""
    return os.path.expanduser(path)
 
+#TODO: kk Something bad here
 @expandhome
 def expand_link(path):
    return os.path.realpath(path)
