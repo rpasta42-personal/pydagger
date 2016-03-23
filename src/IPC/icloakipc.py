@@ -274,10 +274,15 @@ class Protocol(object):
             id=id))
         return self.encode_bytes(json.dumps(packet))
 
-    def encode_call(self, id, method, *params):
+    def encode_call(self, id, method, *params, **kwparams):
+        out_params=list()
+        if params:
+           out_params = list(params)
+        elif kwparams:
+           out_params = dict(kwparams)
         packet = self.protocol_wrapper(dict(
             method=method,
-            params=list(params),
+            params=params,
             id=id))
         return self.encode_bytes(json.dumps(packet))
 
@@ -480,11 +485,11 @@ class IPCSession(object):
         assert isinstance(data, bytes), "data must be bytes"
         self.transport.send(self.session_id, data)
 
-    def call(self, method, *params):
+    def call(self, method, *params, **kwparams):
         """Performs a remote method call"""
         try:
             LOGGER.debug("REMOTE CALL: %s(%s)", method, params)
-            self.send(self.protocol.encode_call(self.call_id, method, *params))
+            self.send(self.protocol.encode_call(self.call_id, method, *params, **kwparams))
         except Exception as ex:
             LOGGER.exception(ex)
         finally:
@@ -521,7 +526,10 @@ class IPCSession(object):
                     method_obj = getattr(self.api_instance, method)
                     if hasattr(method_obj, 'exposed') and method_obj.exposed:
                         try:
-                            result = method_obj(*args)
+                            if isinstance(args, list):
+                               result = method_obj(*args)
+                            elif isinstance(args, dict):
+                               result = method_obj(**args)
                             LOGGER.debug("[%s] RESULT: %s", method, result)
                             self.send(prot.encode_result(id=id, result=result))
                         except Exception as ex:
@@ -667,17 +675,17 @@ class IPCClient(object):
             self._event_handlers[event] = Event()
         self._event_handlers[event] += callback
 
-    def trigger(self, event, *args):
+    def trigger(self, event, *args, **kwargs):
         if event in self._event_handlers:
-            self._event_handlers[event](*args)
+            self._event_handlers[event](*args, **kwargs)
         elif not self._ignore_missing_events:
             LOGGER.error("Event handler not found: %s", event)
             raise MethodNotFound(id='event', method=event)
 
     def __getattr__(self, name):
-        def _fn(*args):
+        def _fn(*args, **kwargs):
             method = name if self.namespace is None else "%s.%s" % (self.namespace, name)
-            packet = self._protocol.encode_call(self._send_id, method, *args)
+            packet = self._protocol.encode_call(self._send_id, method, *args, **kwargs)
             event = IPCEvent(self._send_id, self)
             self._events[self._send_id] = event
             self._send_id += 1
@@ -706,7 +714,10 @@ class IPCClient(object):
 
             if method[0] == '@':
                 try:
-                    self.trigger(method[2:], *args)
+                    if isinstance(args, list):
+                        self.trigger(method[2:], *args)
+                    elif isinstance(args, dict):
+                        self.trigger(method[2:], **args)
                 except MethodNotFound as mex:
                     raise mex
                 except Exception as ex:
