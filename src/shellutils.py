@@ -155,17 +155,17 @@ def expanduser(path):
 
 @expandhome
 def expand_link(path):
-   os.path.abspath(path)
+   return os.path.realpath(path)
 
 #dirname(f) gets directory path of f, doesn't work for relative path
 @expandhome
 def get_file_dir(path):
-   os.path.dirname(path)
+   return os.path.dirname(path)
 
 #gets the name of file given path
 @expandhome
 def get_file_name(path):
-   os.path.basename(path)
+   return os.path.basename(path)
 
 #os.path
 #expanduser() = fixes ~
