@@ -276,13 +276,16 @@ class Protocol(object):
 
     def encode_call(self, id, method, *params, **kwparams):
         out_params=list()
-        if params:
+        if params and len(params) > 0:
            out_params = list(params)
         elif kwparams:
            out_params = dict(kwparams)
+        else:
+           out_params = list()
+
         packet = self.protocol_wrapper(dict(
             method=method,
-            params=params,
+            params=out_params,
             id=id))
         return self.encode_bytes(json.dumps(packet))
 
