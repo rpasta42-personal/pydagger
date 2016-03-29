@@ -19,10 +19,16 @@ def expandhome(func):
    def wrapper(*args, **kwargs):
       new_args = []
       for arg in args:
-         new_args.append(expanduser(arg))
+         if arg is not None:
+            new_args.append(expanduser(arg))
+         else:
+            new_args.append(arg)
       new_kwargs = {}
       for key in kwargs:
-         new_arg[key] = expanduser(kwargs[key])
+         if kwargs[key] is not None:
+            new_kwarg[key] = expanduser(kwargs[key])
+         else:
+            new_kwargs[key] = kwargs[key]
       return func(*new_args, **new_kwargs)
    return wrapper
 
@@ -66,6 +72,19 @@ def is_mount_point(path):
    """Check if given path is a mount point. Expands home"""
    return os.path.ismount(path)
 
+@expandhome
+def get_file_types(path):
+   types = []
+   if is_file(path):
+      types.append('file')
+   if is_dir(path):
+      types.append('dir')
+   if is_link(path):
+      types.append('link')
+   if is_mount_point(path):
+      types.append('mount point')
+   return types
+
 #helper rm function
 @expandhome1
 def _rm_single(path, ignore_errors=False):
@@ -90,7 +109,6 @@ def rm(*paths, ignore_errors=False):
    """Removes files and directories. Expands home"""
    for path in paths:
       _rm_single(path, ignore_errors)
-
 
 @expandhome
 def cp(src, dst):
@@ -141,12 +159,29 @@ def expanduser(path):
    """Expands ~ and %HOME% into full path."""
    return os.path.expanduser(path)
 
+#TODO: kk Something bad here
+@expandhome
+def expand_link(path):
+   return os.path.realpath(path)
+
+#dirname(f) gets directory path of f, doesn't work for relative path
+@expandhome
+def get_file_dir(path):
+   return os.path.dirname(path)
+
+#gets the name of file given path
+@expandhome
+def get_file_name(path):
+   return os.path.basename(path)
+
 #os.path
 #expanduser() = fixes ~
-#dirname(f) gets directory of f
-#realpath(path) removes symbolic links and prepands cwd()
+#realpath(path) removes symbolic links, and if file relative, add absolute path
+   #cwd = '/test/blah' #blah has file called test
+   #realpath('test') => 'test/blah/test'
 #normpath(path) 'A//B', 'A/B/', 'A/foo/../B' => 'A/B'
 #abspath(path) same as normpath but also prepends cwd()
+#kinda same as normpath(join(os.getcwd(), path))
 
 #say you have app/src/main.py. To get path of project directory (app)
 #from main.py you can use get_relative_path(__file__, '..')
@@ -326,6 +361,9 @@ def chown(path, uid, gid):
 
 def get_current_user_id():
    return os.getuid()
+
+def is_admin():
+   return get_current_user_id() == 0
 
 def get_current_user_name():
    return getpass.getuser()
