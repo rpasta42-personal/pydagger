@@ -2,6 +2,8 @@ import os
 import sys
 import daemon
 import lockfile
+import signal
+import time
 import traceback
 
 from setproctitle import setproctitle
@@ -11,6 +13,8 @@ from pycloak.IPC.icloakipc import IPCServer, IPCClient, DisconnectedError
 class Daemon(object):
 
    def __init__(self, sock_address, sock_permissions, proc_title, pidfile, namespace, uid, gid, fork=True):
+      self.uid = uid
+      self.gid = gid
       self.sock_address = sock_address
       self.sock_permissions = sock_permissions
       self.proc_title = proc_title
@@ -26,24 +30,59 @@ class Daemon(object):
 
    def start(self):
 
+      if self.status():
+         return False
+
       daemon_lock = lockfile.FileLock(self.pidfile)
       setproctitle(self.proc_title)
       
-      self.on_starting()
 
       try:
          if self.fork:
+            daemon_context = daemon.DaemonContext(
+                  pidfile = daemon_lock
+            )
+            self.on_starting(daemon_context)
             daemon_context.uid = self.uid
             daemon_context.gid = self.gid
             with daemon_context:
                daemon_server = self._setup_daemon_server()
+               with open("%s.pid" % self.pidfile, 'w') as pid_fh:
+                  pid_fh.write(str(os.getpid()))
+                  pid_fh.flush()
+                  pid_fh.close()
+
+               signal.signal(signal.SIGTERM, lambda a,b: daemon_server.stop())
+               signal.signal(signal.SIGINT, lambda a,b: daemon_server.stop())
                daemon_server.start()
+            self._cleanup()
+            return 'EXIT'
          else:
+            self.on_starting()
             daemon_lock.acquire()
             daemon_server = self._setup_daemon_server()
+            with open("%s.pid" % self.pidfile, 'w') as pid_fh:
+               pid_fh.write(str(os.getpid()))
+               pid_fh.flush()
+               pid_fh.close()
+
+            signal.signal(signal.SIGTERM, lambda a,b: daemon_server.stop())
+            signal.signal(signal.SIGINT, lambda a,b: daemon_server.stop())
             daemon_server.start()
+            self._cleanup()
+            return 'EXIT'
+      except Exception as ex:
+         print(ex)
       finally:
+         print("releasing lock")
          daemon_lock.release()
+
+      return True
+
+   def _cleanup(self):
+      if os.path.exists("%s.pid" % self.pidfile):
+         os.unlink("%s.pid" % self.pidfile)
+
 
    def _setup_daemon_server(self):
       daemon_server = IPCServer.new_unix_transport(
@@ -73,16 +112,13 @@ class Daemon(object):
    def stop(self):
       self.on_stopping()
       daemon_lock = lockfile.FileLock(self.pidfile)
+      if not daemon_lock.is_locked():
+         return True
 
-      try:
-         daemon_client = self.get_client()
-         with open(self.pidfile, 'r') as pid_fh:
-            print(pid_fh.read())
-
-         # client daemon must implement "daemon_stop" method to trigger clean shutdown
-         daemon_client.daemon_stop()
-      except DisconnectedError as dex:
-         pass
+      with open("%s.pid" % self.pidfile, 'r') as pid_fh:
+         pid = int(pid_fh.read().strip())
+         print("Stoping process: %s" % pid)
+         os.kill(pid, signal.SIGTERM)
 
       count=0
       while self.status():
