@@ -7,6 +7,7 @@ import socket
 import textwrap
 import logging
 
+from contextlib import contextmanager
 from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
 from pycloak import sockets
@@ -639,12 +640,15 @@ class IPCServer(object):
             self.mqueue.process()
             self.on_idle(self)
 
+            return True
+
+        return False
+
     def stop(self):
         self._is_running = False
         self.transport.stop()
         if not self._blocking:
             self.on_stop(self)
-
 
 class IPCClient(object):
 
@@ -702,6 +706,14 @@ class IPCClient(object):
         elif not self._ignore_missing_events:
             LOGGER.error("Event handler not found: %s", event)
             raise MethodNotFound(id='event', method=event)
+
+    @contextmanager
+    def ipc_sync(self):
+        assert not self._sync, "Client is already sync"
+        self._sync = True
+        yield
+        self._sync = False
+
 
     def __getattr__(self, name):
         def _fn(*args, **kwargs):

@@ -28,7 +28,7 @@ class Daemon(object):
       self.on_stopping = Event()
       self.on_stopped = Event()
 
-   def start(self):
+   def start(self, main_loop=None):
 
       if self.status():
          return False
@@ -54,7 +54,11 @@ class Daemon(object):
 
                signal.signal(signal.SIGTERM, lambda a,b: daemon_server.stop())
                signal.signal(signal.SIGINT, lambda a,b: daemon_server.stop())
-               daemon_server.start()
+               if main_loop == None:
+                  daemon_server.start()
+               else:
+                  main_loop(daemon_server, self)
+
             self._cleanup()
             return 'EXIT'
          else:
@@ -68,7 +72,11 @@ class Daemon(object):
 
             signal.signal(signal.SIGTERM, lambda a,b: daemon_server.stop())
             signal.signal(signal.SIGINT, lambda a,b: daemon_server.stop())
-            daemon_server.start()
+            if main_loop == None:
+               daemon_server.start()
+            else:
+               main_loop(daemon_server, self)
+
             self._cleanup()
             return 'EXIT'
       except Exception as ex:
