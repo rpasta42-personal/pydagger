@@ -4,6 +4,7 @@ import time
 import socket
 import logging
 import traceback
+from struct import unpack
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,10 +19,27 @@ class SocketHandler(object):
         self.writer = SocketWriter(self.sock)
         self.connected = True
         self.on_connected()
+        try:
+            ucred = self.sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
+            self._pid, self._uid, self._gid = unpack('III', ucred)
+        except Exception as ex:
+            LOGGER.exception(ex)
+            self._pid = False
+            self._uid = False
+            self._gid = False
 
     def __del__(self):
         if self.connected:
             self.disconnect()
+
+    def get_uid(self):
+        return self._uid
+
+    def get_gid(self):
+        return self._gid
+
+    def get_pid(self):
+        return self._pid
 
     def disconnect(self):
         if self.connected:

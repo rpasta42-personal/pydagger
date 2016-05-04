@@ -7,6 +7,7 @@ import socket
 import textwrap
 import logging
 
+from contextlib import contextmanager
 from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
 from pycloak import sockets
@@ -411,6 +412,7 @@ class SocketServerTransport(object):
         self.on_session_data = Event()
         self.on_session_removed = Event()
 
+        self._server = None
         self._server_update = None
         self._clients = dict()
         self._clients_buffer = dict()
@@ -471,6 +473,9 @@ class SocketServerTransport(object):
         else:
             LOGGER.error("[%s] SESSION NOT FOUND", session_id)
 
+    def get_client(self, session_id):
+        return self._clients.get(session_id, False)
+
 class IPCSession(object):
     """IPC Session class. Handles states between client connection sessions"""
 
@@ -482,6 +487,16 @@ class IPCSession(object):
         self.transport = transport
         self.protocol = protocol
         self.call_id = 0
+        self.server = server
+
+    def get_uid(self):
+        return self.transport.get_client(self.session_id).get_uid()
+
+    def get_gid(self):
+        return self.transport.get_client(self.session_id).get_gid()
+
+    def get_pid(self):
+        return self.transport.get_client(self.session_id).get_pid()
 
     def send(self, data):
         """Sends raw bytes"""
@@ -587,7 +602,11 @@ class IPCServer(object):
         self.transport.on_session_removed += self.on_session_removed
 
     def on_session_added(self, session_id):
-        self._sessions[session_id] = IPCSession(self, session_id, self.api_factory, self.transport, self.protocol_factory())
+        try:
+            self._sessions[session_id] = IPCSession(self, session_id, self.api_factory, self.transport, self.protocol_factory())
+        except Exception as ex:
+            LOGGER.error("Could not create client session")
+            LOGGER.exception(ex)
 
     def on_session_data(self, session_id, data):
         if session_id in self._sessions:
@@ -621,12 +640,15 @@ class IPCServer(object):
             self.mqueue.process()
             self.on_idle(self)
 
+            return True
+
+        return False
+
     def stop(self):
         self._is_running = False
         self.transport.stop()
         if not self._blocking:
             self.on_stop(self)
-
 
 class IPCClient(object):
 
@@ -684,6 +706,14 @@ class IPCClient(object):
         elif not self._ignore_missing_events:
             LOGGER.error("Event handler not found: %s", event)
             raise MethodNotFound(id='event', method=event)
+
+    @contextmanager
+    def ipc_sync(self):
+        assert not self._sync, "Client is already sync"
+        self._sync = True
+        yield
+        self._sync = False
+
 
     def __getattr__(self, name):
         def _fn(*args, **kwargs):
