@@ -1,5 +1,9 @@
 #TODO: actually write a README.md
 
+
+Docs:
+workon pycloak; pip intsall Sphinx; cd doc; make html
+
 To use the library run `make build` and then sudo `make install`.
 
 for dbug:
