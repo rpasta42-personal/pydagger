@@ -34,10 +34,10 @@ def expandhome(func):
 
 @expandhome
 def mkdir(path):
-   """recursively create dirs (like mkdir -p). Expands home.
+   """recursively create dirs (like mkdir -p). Expands home (~)
 
-   Args:
-      path (string): Path to directory to create.
+   :param   path: Path to directory to create
+   :type    path: str
    """
    #os.mkdir(name) #make one directory
    #exists_ok prevents errors when dir already exists
@@ -45,16 +45,16 @@ def mkdir(path):
 
 @expandhome
 def ls(path='.'):
-   """List files in current directory (default is current directory). Expands home
+   """List files in current directory (default is current directory). Expands home (~)
 
-   Args:
-      path='.' (string): Path where we want to list directories.
+   :param   path: Path to to list directories
+   :type    path: str
    """
    return os.listdir(path)
 
 @expandhome
 def is_file(path):
-   """Check if given path is a file. Expands home"""
+   """Check if given path is a file. Expands home (~)"""
    return os.path.isfile(path)
 
 @expandhome
@@ -357,6 +357,7 @@ def chmod():
    #https://docs.python.org/2/library/stat.html#stat.S_ISUID
 
 def chown(path, uid, gid):
+   """Change owner and group of a file."""
    os.chown(path, uid, gid)
 
 def get_current_user_id():
@@ -428,8 +429,8 @@ def get_user_groups(usrname, grpdb=None):
             ret.append(get_name_from_group_data(group))
    return ret
 
-#get password database
 def get_password_db():
+   """Returns password database"""
    return pwd.getpwall()
 #end pwd
 
@@ -455,6 +456,7 @@ def reload_module(module):
    importlib.reload(module)
 
 def recompile_pycloak(m=None, pycloak_path='~/work/pycloak'):
+   """Recompile and import module. Useful for quick command line testing without re-starting repl."""
    import sh
    current_path = cwd()
 
@@ -498,6 +500,7 @@ class ProgressBar(object):
         self.max_width = max_width
 
     def update(self, p, label=""):
+        """Update progress with optional label"""
         tw,th = shutil.get_terminal_size(fallback=(80,40))
         self.spinner_tick += 1
         i = int((p * self.max_width) / 100)
