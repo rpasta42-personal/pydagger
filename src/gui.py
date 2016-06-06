@@ -113,7 +113,7 @@ class Window(object):
          main_loop_callback()
          GObject.timeout_add(how_often, main_loop_updater)
 
-      main_loop_callback()
+      main_loop_updater()
       Gtk.main()
 
 
