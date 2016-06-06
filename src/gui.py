@@ -103,6 +103,9 @@ class Window(object):
 
       if self.on_gui_event is not None:
          self.on_gui_event(data)
+  
+   def timeout(self, milli, f):
+      OBject.timeout_add(milli, f) 
 
    #Optional. Can also use custom loop
    def run(self, main_loop_callback=None, how_often=1000):
