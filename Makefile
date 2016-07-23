@@ -2,7 +2,7 @@ SHELL := /bin/bash
 default: build
 
 setup:
-	source `which virtualenvwrapper.sh` && mkvirtualenv pycloak --python=`which python3` && workon icloak-updater && pip install --upgrade setuptools pip wheel && pip install -r misc/freeze.txt; deactivate
+	source `which virtualenvwrapper.sh` && mkvirtualenv pycloak --python=`which python3` && workon pycloak && pip install --upgrade setuptools pip wheel && pip install -r misc/freeze.txt; deactivate
 
 build:
 	make clean && cd misc/pip_pkg; python setup.py bdist_wheel
