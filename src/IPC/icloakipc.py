@@ -7,7 +7,7 @@ import socket
 import textwrap
 import logging
 
-from contextlib import contextmanager
+from contextlib import contextmanager, ContextDecorator
 from pycloak.events import Event
 from pycloak.threadutils import MessageQueue
 from pycloak import sockets
@@ -650,7 +650,7 @@ class IPCServer(object):
         if not self._blocking:
             self.on_stop(self)
 
-class IPCClient(object):
+class IPCClient(ContextDecorator):
 
     @classmethod
     def new_tcp_transport(cls, ip, port, namespace=None, protocol_factory=Protocol, sync=False):
@@ -684,6 +684,18 @@ class IPCClient(object):
         self._events = dict()
 
         self._event_handlers = dict()
+
+    def __enter__(self):
+        self.ipc_connect()
+
+    def __exit__(self):
+        self.ipc_diconnect()
+
+    @contextmanager
+    def icp_context(self):
+        self._transport.connect()
+        yield
+        self._transport.disconnect()
 
     def ipc_connect(self):
         self._transport.connect()
